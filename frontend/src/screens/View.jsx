@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -20,12 +20,72 @@ import {
   Input,
   useToast,
   IconButton,
+  Spinner,
+  Flex,
+  Image,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
+import { useParams } from "react-router-dom";
+
+export const BASE_URL =
+  import.meta.env.MODE === "development" ? "http://127.0.0.1:5000/api" : "/api";
 
 const View = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [model, setModel] = useState();
+  const [isLoading, setIsLoading] = useState(true);
+  const [formData, setFormData] = useState({});
+
+  console.log(formData);
+
+  console.log(model);
+
   const toast = useToast();
+  const { id } = useParams();
+
+  useEffect(() => {
+    const getModel = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${BASE_URL}/models/${id}`);
+        if (response.ok) {
+          const result = await response.json();
+          setModel(result);
+          initializeFormData(result.features);
+        }
+      } catch (error) {
+        console.error("Failed to fetch model:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    getModel();
+  }, [id]);
+
+  const initializeFormData = (features) => {
+    const initialFormData = {};
+
+    features.forEach((feature) => {
+      if (feature.calculate) {
+        switch (feature.datatype) {
+          case "string":
+            initialFormData[feature.name] = ""; // Initialize with empty string
+            break;
+          case "number":
+            initialFormData[feature.name] = 0; // Initialize with zero
+            break;
+          case "boolean":
+            initialFormData[feature.name] = false; // Initialize with false
+            break;
+          default:
+            initialFormData[feature.name] = ""; // Fallback to empty string if type is unknown
+        }
+      }
+    });
+
+    setFormData(initialFormData);
+  };
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -41,206 +101,172 @@ const View = () => {
     onClose(); // Close the modal after submission
   };
 
+  const handleChange = (e) => {
+    const { id, value } = e.target;
+    setFormData({
+      ...formData,
+      [id]: value,
+    });
+  };
+
   return (
-    <Container maxW="container.md" py={8}>
-      <Stack spacing={6}>
-        {/* Header */}
-        <Heading as="h1" size="xl" textAlign="center">
-          Student Performance Dataset
-        </Heading>
-
-        {/* Introduction */}
-        <Box>
-          <Heading as="h2" size="lg" mb={4}>
-            About Dataset
+    <>
+      {isLoading && (
+        <Flex justifyContent={"center"} mt={4}>
+          <Spinner size={"xl"} />
+        </Flex>
+      )}
+      <Container maxW="container.md" py={8}>
+        <Stack spacing={6}>
+          {/* Header */}
+          <Heading as="h1" size="xl" textAlign="center">
+            {model?.name}
           </Heading>
-          <Text fontSize="md">
-            The Student Performance Dataset is designed to evaluate and predict
-            student outcomes based on various factors that can influence
-            academic success. This synthetic dataset includes features that are
-            commonly considered in educational research and real-world
-            scenarios, such as attendance, study habits, previous academic
-            performance, and participation in extracurricular activities. The
-            goal is to understand how these factors correlate with the final
-            grades of students and to build a predictive model that can forecast
-            student performance.
-          </Text>
-        </Box>
 
-        {/* Dataset Features */}
-        <Box>
-          <Heading as="h2" size="lg" mb={4}>
-            Dataset Features
-          </Heading>
-          <List spacing={3}>
-            <ListItem>
-              <strong>StudentID:</strong> A unique identifier for each student.
-            </ListItem>
-            <ListItem>
-              <strong>Name:</strong> The name of the student.
-            </ListItem>
-            <ListItem>
-              <strong>Gender:</strong> The gender of the student (Male/Female).
-            </ListItem>
-            <ListItem>
-              <strong>AttendanceRate:</strong> The percentage of classes
-              attended by the student.
-            </ListItem>
-            <ListItem>
-              <strong>StudyHoursPerWeek:</strong> The number of hours the
-              student spends studying each week.
-            </ListItem>
-            <ListItem>
-              <strong>PreviousGrade:</strong> The grade the student achieved in
-              the previous semester (out of 100).
-            </ListItem>
-            <ListItem>
-              <strong>ExtracurricularActivities:</strong> The number of
-              extracurricular activities the student is involved in.
-            </ListItem>
-            <ListItem>
-              <strong>ParentalSupport:</strong> A qualitative assessment of the
-              level of support provided by the student's parents
-              (High/Medium/Low).
-            </ListItem>
-            <ListItem>
-              <strong>FinalGrade:</strong> The final grade of the student (out
-              of 100), which serves as the target variable for prediction.
-            </ListItem>
-          </List>
-        </Box>
+          {/* About Dataset */}
+          <Box>
+            <Heading as="h2" size="lg" mb={4}>
+              About Dataset
+            </Heading>
+            <Text fontSize="md">{model?.about_dataset}</Text>
+          </Box>
 
-        {/* Use Cases */}
-        <Box>
-          <Heading as="h2" size="lg" mb={4}>
-            Use Cases
-          </Heading>
-          <List spacing={3}>
-            <ListItem>
-              Predicting Student Performance: The dataset can be used to build
-              machine learning models that predict the final grade of students
-              based on the other features. This can help educators identify
-              students who may need additional support to improve their
-              outcomes.
-            </ListItem>
-            <ListItem>
-              Exploratory Data Analysis: Researchers and data scientists can
-              explore the relationships between different factors (like
-              attendance or study habits) and student performance. For example,
-              understanding whether higher attendance correlates with better
-              grades.
-            </ListItem>
-            <ListItem>
-              Feature Importance Analysis: The dataset allows for the
-              examination of which features are most predictive of student
-              success, providing insights into key areas of focus for
-              educational interventions.
-            </ListItem>
-            <ListItem>
-              Educational Interventions: By identifying patterns in the data,
-              schools and educational institutions can implement targeted
-              interventions to help students improve in specific areas, such as
-              increasing study hours or encouraging participation in
-              extracurricular activities.
-            </ListItem>
-          </List>
-        </Box>
+          {/* Algorithm Details */}
+          <Box>
+            <Heading as="h2" size="lg" mb={4}>
+              Algorithm Details
+            </Heading>
+            <Text fontSize="md">
+              <strong>Algorithm Used:</strong>{" "}
+              {model?.algorithm_used?.join(", ") || "N/A"}
+              <br />
+              <strong>Best Algorithm:</strong> {model?.best_algorithm || "N/A"}
+            </Text>
+          </Box>
 
-        {/* Potential Insights */}
-        <Box>
-          <Heading as="h2" size="lg" mb={4}>
-            Potential Insights
-          </Heading>
-          <List spacing={3}>
-            <ListItem>
-              Correlation Between Study Habits and Performance: The dataset can
-              be used to determine how much study time contributes to academic
-              success.
-            </ListItem>
-            <ListItem>
-              Impact of Attendance on Grades: Analysis can reveal the extent to
-              which regular attendance influences final grades.
-            </ListItem>
-            <ListItem>
-              Role of Extracurricular Activities: The dataset can help assess
-              whether participation in extracurricular activities positively or
-              negatively impacts academic performance.
-            </ListItem>
-            <ListItem>
-              Influence of Parental Support: The data allows for the examination
-              of how different levels of parental support affect student
-              outcomes.
-            </ListItem>
-          </List>
-        </Box>
+          {/* Model Description */}
+          <Box>
+            <Heading as="h2" size="lg" mb={4}>
+              Model Description
+            </Heading>
+            <Text fontSize="md">
+              {model?.description || "No description available"}
+            </Text>
+          </Box>
 
-        {/* Conclusion */}
-        <Box>
-          <Heading as="h2" size="lg" mb={4}>
-            Conclusion
-          </Heading>
-          <Text fontSize="md">
-            The Student Performance Dataset is a versatile tool for educators,
-            data scientists, and researchers interested in understanding and
-            predicting student success. By analyzing this data, stakeholders can
-            gain valuable insights into the factors that contribute to academic
-            performance and develop strategies to enhance educational outcomes.
-          </Text>
-        </Box>
+          {/* Dataset Features */}
+          <Box>
+            <Heading as="h2" size="lg" mb={4}>
+              Dataset Features
+            </Heading>
+            <List spacing={3}>
+              {model?.features?.map((feature, index) =>
+                feature ? (
+                  <ListItem key={index}>
+                    <strong>{feature.name}:</strong> {feature.desc}
+                  </ListItem>
+                ) : null
+              )}
+            </List>
+          </Box>
 
-        {/* Floating Button */}
-        <IconButton
-          aria-label="Add Model"
-          icon={<AddIcon />}
-          position="fixed"
-          bottom={4}
-          right={4}
-          colorScheme="blue"
-          borderRadius="full"
-          boxShadow="lg"
-          size="lg"
-          fontSize="xl"
-          onClick={onOpen}
-        />
+          {/* Visualization Image */}
+          <Box mb={4}>
+            <Heading as="h2" size="lg" mb={4}>
+              Visualization Image
+            </Heading>
+            {model?.heatmap_image && (
+              <Image
+                src={`${BASE_URL}/heatmaps/${model.heatmap_image}`} // Construct URL for heatmap image
+                alt="Visualization"
+                borderRadius="md"
+                boxSize="full"
+                objectFit="cover"
+              />
+            )}
+          </Box>
 
-        {/* Modal */}
-        <Modal isOpen={isOpen} onClose={onClose}>
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>Submit Your Model</ModalHeader>
-            <ModalBody>
-              <form onSubmit={handleSubmit}>
-                <Stack spacing={4}>
-                  <FormControl id="modelName" isRequired>
-                    <FormLabel>Model Name</FormLabel>
-                    <Input placeholder="Enter model name" />
-                  </FormControl>
+          {/* File Information */}
+          <Box>
+            <Heading as="h2" size="lg" mb={4}>
+              File Information
+            </Heading>
+            <Text fontSize="md">
+              <strong>Filename:</strong>{" "}
+              {model?.filename || "No file available"}
+              <br />
+              <strong>Model Type:</strong> {model?.model_type || "N/A"}
+              <br />
+              <strong>Source Link:</strong>{" "}
+              <a
+                href={model?.source_link}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {model?.source_link || "No source link"}
+              </a>
+            </Text>
+          </Box>
 
-                  <FormControl id="modelDescription" isRequired>
-                    <FormLabel>Description</FormLabel>
-                    <Input placeholder="Enter model description" />
-                  </FormControl>
+          {/* Floating Button */}
+          <IconButton
+            aria-label="Add Model"
+            icon={<AddIcon />}
+            position="fixed"
+            bottom={4}
+            right={4}
+            colorScheme="blue"
+            borderRadius="full"
+            boxShadow="lg"
+            size="lg"
+            fontSize="xl"
+            onClick={onOpen}
+          />
 
-                  <FormControl id="dateCreated" isRequired>
-                    <FormLabel>Date Created</FormLabel>
-                    <Input type="date" />
-                  </FormControl>
-                </Stack>
-              </form>
-            </ModalBody>
+          {/* Modal */}
+          <Modal isOpen={isOpen} onClose={onClose}>
+            <ModalOverlay />
+            <ModalContent>
+              <ModalHeader>Submit Your Model</ModalHeader>
+              <ModalBody>
+                <form onSubmit={handleSubmit}>
+                  <Stack spacing={4}>
+                    {model?.features
+                      ?.filter((feature) => feature.calculate)
+                      .map((feature, index) => (
+                        <FormControl id={feature.name} key={index} isRequired>
+                          <FormLabel>{feature.name}</FormLabel>
+                          <Input
+                            placeholder={feature.desc}
+                            type={
+                              feature.datatype === "int"
+                                ? "number"
+                                : feature.datatype === "float"
+                                ? "number"
+                                : "text"
+                            }
+                            value={formData[feature.name] || ""}
+                            onChange={handleChange}
+                          />
+                        </FormControl>
+                      ))}
+                  </Stack>
+                </form>
+              </ModalBody>
 
-            <ModalFooter>
-              <Button colorScheme="blue" mr={3} onClick={handleSubmit}>
-                Submit
-              </Button>
-              <Button variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
-      </Stack>
-    </Container>
+              <ModalFooter>
+                <Button colorScheme="blue" mr={3} onClick={handleSubmit}>
+                  Submit
+                </Button>
+                <Button variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
+              </ModalFooter>
+            </ModalContent>
+          </Modal>
+        </Stack>
+      </Container>
+    </>
   );
 };
 

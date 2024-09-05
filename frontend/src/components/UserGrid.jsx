@@ -1,32 +1,21 @@
-import { Flex, Grid, Spinner, Text } from "@chakra-ui/react";
-
+import { Flex, Grid, Spinner, Text, Button, HStack } from "@chakra-ui/react";
 import UserCard from "./UserCard";
 import { useEffect, useState } from "react";
-import { BASE_URL } from "../App";
 
-const UserGrid = ({ users, setUsers }) => {
-  const [isLoading, setIsLoading] = useState(true);
+const UserGrid = ({
+  models,
+  setModels,
+  isLoading,
+  totalPages,
+  currentPage,
+  setCurrentPage,
+}) => {
+  const handlePageChange = (page) => {
+    if (page > 0 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
-  useEffect(() => {
-    const getUsers = async () => {
-      try {
-        const res = await fetch(BASE_URL + "/friends");
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error);
-        }
-        setUsers(data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    getUsers();
-  }, [setUsers]);
-
-  console.log(users);
   return (
     <>
       <Grid
@@ -37,18 +26,18 @@ const UserGrid = ({ users, setUsers }) => {
         }}
         gap={4}
       >
-        {users.map((user) => (
-          <UserCard key={user.id} user={user} setUsers={setUsers} />
+        {models?.map((model) => (
+          <UserCard key={model.id} model={model} setModels={setModels} />
         ))}
       </Grid>
 
       {isLoading && (
-        <Flex justifyContent={"center"}>
+        <Flex justifyContent={"center"} mt={4}>
           <Spinner size={"xl"} />
         </Flex>
       )}
-      {!isLoading && users.length === 0 && (
-        <Flex justifyContent={"center"}>
+      {!isLoading && models?.length === 0 && (
+        <Flex justifyContent={"center"} mt={4}>
           <Text fontSize={"xl"}>
             <Text as={"span"} fontSize={"2xl"} fontWeight={"bold"} mr={2}>
               Poor you! 🥺
@@ -57,7 +46,30 @@ const UserGrid = ({ users, setUsers }) => {
           </Text>
         </Flex>
       )}
+
+      {!isLoading && totalPages > 1 && (
+        <Flex justifyContent={"center"} mt={4}>
+          <HStack spacing={4}>
+            <Button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <Text fontSize={"lg"}>
+              Page {currentPage} of {totalPages}
+            </Text>
+            <Button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </HStack>
+        </Flex>
+      )}
     </>
   );
 };
+
 export default UserGrid;

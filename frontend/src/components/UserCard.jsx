@@ -14,24 +14,25 @@ import { BiTrash } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../App";
 
-const UserCard = ({ user, setUsers }) => {
+const UserCard = ({ model, setModels }) => {
   const toast = useToast();
   const navigate = useNavigate();
 
-  const handleDeleteUser = async () => {
+  const handleDeleteModel = async (e) => {
+    e.stopPropagation(); // Prevent triggering the card click
     try {
-      const res = await fetch(`${BASE_URL}/friends/${user.id}`, {
+      const res = await fetch(`${BASE_URL}/models/${model.id}`, {
         method: "DELETE",
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error);
       }
-      setUsers((prevUsers) => prevUsers.filter((u) => u.id !== user.id));
+      setModels((prevModel) => prevModel.filter((u) => u.id !== model.id));
       toast({
         status: "success",
         title: "Success",
-        description: "Friend deleted successfully.",
+        description: "Model deleted successfully.",
         duration: 2000,
         position: "top-center",
       });
@@ -48,7 +49,7 @@ const UserCard = ({ user, setUsers }) => {
   };
 
   const handleCardClick = () => {
-    navigate(`/model/${user.id}`);
+    navigate(`/model/${model.id}`);
   };
 
   return (
@@ -75,11 +76,19 @@ const UserCard = ({ user, setUsers }) => {
       >
         <Flex justify="space-between" align="center">
           <Box>
-            <Heading size="md">{user.name}</Heading>
+            <Heading size="md">{model.name}</Heading>
             <Text fontSize="sm" color="gray.500">
-              {user.createdAt}
+              {model.createdAt}
             </Text>
           </Box>
+          <IconButton
+            icon={<BiTrash />}
+            aria-label="Delete Model"
+            colorScheme="red"
+            onClick={handleDeleteModel} // Call the delete function
+            size="sm"
+            isRound
+          />
         </Flex>
       </CardHeader>
 
@@ -92,7 +101,7 @@ const UserCard = ({ user, setUsers }) => {
           whiteSpace="normal"
           maxH="6.4em"
         >
-          {user.description}
+          {model.description}
         </Text>
       </CardBody>
     </Card>
