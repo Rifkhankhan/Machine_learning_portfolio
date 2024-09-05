@@ -33,7 +33,9 @@ class Feature(db.Model):
 class Model(db.Model):
   id = db.Column(db.Integer, primary_key=True)
   name = db.Column(db.String(100), nullable=False)
-  filename = db.Column(db.String(100), nullable=False)
+  filename = db.Column(db.String(255), nullable=False)  # Increased length
+  scalerfile = db.Column(db.String(255), nullable=True)
+  encodingfile = db.Column(db.String(255), nullable=True)
   about_dataset = db.Column(db.Text, nullable=False)
   features = db.Column(db.Text, nullable=False)  # Store JSON as string
   description = db.Column(db.Text, nullable=False)
@@ -51,6 +53,8 @@ class Model(db.Model):
           "name": self.name,
           "description": self.description,
           "filename": self.filename,
+          "scalerfile": self.scalerfile,
+          "encodingfile": self.encodingfile,
           "heatmap_image": self.heatmap_image,
           "about_dataset": self.about_dataset,
           "best_algorithm": self.best_algorithm,

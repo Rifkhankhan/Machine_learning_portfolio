@@ -37,6 +37,8 @@ function Home() {
     name: "",
     description: "",
     filename: null,
+    encodingfile: null,
+    scalerfile: null,
     about_dataset: "",
     best_algorithm: "",
     heatmap_image: null,
@@ -118,6 +120,8 @@ function Home() {
     if (newModel.filename && newModel.heatmap_image) {
       const formData = new FormData();
       formData.append("filename", newModel.filename);
+      formData.append("scalerfile", newModel.scalerfile);
+      formData.append("encodingfile", newModel.encodingfile);
       formData.append("heatmap_image", newModel.heatmap_image);
       formData.append("name", newModel.name);
       formData.append("description", newModel.description);
@@ -259,7 +263,32 @@ function Home() {
                   type="file"
                   name="filename"
                   onChange={handleFileChange}
-                  accept=".pkl,.ipynb,.py"
+                  accept=".pkl"
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>
+                  For this if you did encoding of categorical features(.pkl)
+                </FormLabel>
+                <Input
+                  type="file"
+                  name="encodingfile"
+                  onChange={handleFileChange}
+                  accept=".pkl"
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>
+                  For this if you did Feature Scalling to scale your numerical
+                  features(.pkl)
+                </FormLabel>
+                <Input
+                  type="file"
+                  name="scalerfile"
+                  onChange={handleFileChange}
+                  accept=".pkl"
                 />
               </FormControl>
 

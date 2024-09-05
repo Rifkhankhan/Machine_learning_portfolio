@@ -35,11 +35,7 @@ const View = () => {
   const [model, setModel] = useState();
   const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({});
-
-  console.log(formData);
-
-  console.log(model);
-
+  const [formErrors, setFormErrors] = useState({});
   const toast = useToast();
   const { id } = useParams();
 
@@ -65,40 +61,110 @@ const View = () => {
 
   const initializeFormData = (features) => {
     const initialFormData = {};
-
     features.forEach((feature) => {
       if (feature.calculate) {
         switch (feature.datatype) {
           case "string":
-            initialFormData[feature.name] = ""; // Initialize with empty string
+            initialFormData[feature.name] = "";
             break;
           case "number":
-            initialFormData[feature.name] = 0; // Initialize with zero
+            initialFormData[feature.name] = 0;
             break;
           case "boolean":
-            initialFormData[feature.name] = false; // Initialize with false
+            initialFormData[feature.name] = false;
             break;
           default:
-            initialFormData[feature.name] = ""; // Fallback to empty string if type is unknown
+            initialFormData[feature.name] = "";
         }
       }
     });
-
     setFormData(initialFormData);
   };
 
-  const handleSubmit = (event) => {
+  // Validation Logic
+  const validateForm = () => {
+    const errors = {};
+    model.features
+      .filter((feature) => feature.calculate)
+      .forEach((feature) => {
+        if (feature.required && !formData[feature.name]) {
+          errors[feature.name] = `${feature.name} is required`;
+        } else if (
+          feature.datatype === "number" &&
+          isNaN(formData[feature.name])
+        ) {
+          errors[feature.name] = `${feature.name} must be a number`;
+        }
+      });
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // Implement form submission logic here
-    toast({
-      title: "Form submitted.",
-      description: "Your data has been submitted successfully.",
-      status: "success",
-      duration: 2000,
-      isClosable: true,
-      position: "top-center",
-    });
-    onClose(); // Close the modal after submission
+    if (!validateForm()) {
+      toast({
+        title: "Validation error.",
+        description: "Please fix the errors before submitting.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "top-right",
+      });
+      return;
+    }
+
+    // Prepare form data
+    const submissionData = {
+      formData,
+      modelId: model?.id,
+    };
+
+    try {
+      const response = await fetch(`${BASE_URL}/models/predict`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(submissionData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        console.log("Prediction result:", result.prediction);
+
+        toast({
+          title: "Model added.",
+          description: "Your new model has been added successfully.",
+          status: "success",
+          duration: 2000,
+          isClosable: true,
+          position: "top-right",
+        });
+        onClose();
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Error adding model.",
+          description:
+            error.error || "An error occurred while adding the model.",
+          status: "error",
+          duration: 2000,
+          isClosable: true,
+          position: "top-right",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Network error.",
+        description: "Failed to connect to the server.",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+        position: "top-right",
+      });
+    }
   };
 
   const handleChange = (e) => {
@@ -118,12 +184,10 @@ const View = () => {
       )}
       <Container maxW="container.md" py={8}>
         <Stack spacing={6}>
-          {/* Header */}
           <Heading as="h1" size="xl" textAlign="center">
             {model?.name}
           </Heading>
 
-          {/* About Dataset */}
           <Box>
             <Heading as="h2" size="lg" mb={4}>
               About Dataset
@@ -131,7 +195,6 @@ const View = () => {
             <Text fontSize="md">{model?.about_dataset}</Text>
           </Box>
 
-          {/* Algorithm Details */}
           <Box>
             <Heading as="h2" size="lg" mb={4}>
               Algorithm Details
@@ -144,7 +207,6 @@ const View = () => {
             </Text>
           </Box>
 
-          {/* Model Description */}
           <Box>
             <Heading as="h2" size="lg" mb={4}>
               Model Description
@@ -154,39 +216,35 @@ const View = () => {
             </Text>
           </Box>
 
-          {/* Dataset Features */}
           <Box>
             <Heading as="h2" size="lg" mb={4}>
               Dataset Features
             </Heading>
             <List spacing={3}>
-              {model?.features?.map((feature, index) =>
-                feature ? (
-                  <ListItem key={index}>
-                    <strong>{feature.name}:</strong> {feature.desc}
-                  </ListItem>
-                ) : null
-              )}
+              {model?.features?.map((feature, index) => (
+                <ListItem key={index}>
+                  <strong>{feature.name}:</strong> {feature.desc}
+                </ListItem>
+              ))}
             </List>
           </Box>
 
-          {/* Visualization Image */}
-          <Box mb={4}>
-            <Heading as="h2" size="lg" mb={4}>
-              Visualization Image
-            </Heading>
-            {model?.heatmap_image && (
+          {model?.heatmap_image && (
+            <Box mb={4}>
+              <Heading as="h2" size="lg" mb={4}>
+                Visualization Image
+              </Heading>
+
               <Image
-                src={`${BASE_URL}/heatmaps/${model.heatmap_image}`} // Construct URL for heatmap image
+                src={`${BASE_URL}/heatmaps/${model.heatmap_image}`}
                 alt="Visualization"
                 borderRadius="md"
                 boxSize="full"
                 objectFit="cover"
               />
-            )}
-          </Box>
+            </Box>
+          )}
 
-          {/* File Information */}
           <Box>
             <Heading as="h2" size="lg" mb={4}>
               File Information
@@ -208,7 +266,6 @@ const View = () => {
             </Text>
           </Box>
 
-          {/* Floating Button */}
           <IconButton
             aria-label="Add Model"
             icon={<AddIcon />}
@@ -223,7 +280,6 @@ const View = () => {
             onClick={onOpen}
           />
 
-          {/* Modal */}
           <Modal isOpen={isOpen} onClose={onClose}>
             <ModalOverlay />
             <ModalContent>
@@ -234,7 +290,11 @@ const View = () => {
                     {model?.features
                       ?.filter((feature) => feature.calculate)
                       .map((feature, index) => (
-                        <FormControl id={feature.name} key={index} isRequired>
+                        <FormControl
+                          id={feature.name}
+                          key={index}
+                          isInvalid={formErrors[feature.name]}
+                        >
                           <FormLabel>{feature.name}</FormLabel>
                           <Input
                             placeholder={feature.desc}
@@ -248,6 +308,11 @@ const View = () => {
                             value={formData[feature.name] || ""}
                             onChange={handleChange}
                           />
+                          {formErrors[feature.name] && (
+                            <Text color="red.500">
+                              {formErrors[feature.name]}
+                            </Text>
+                          )}
                         </FormControl>
                       ))}
                   </Stack>

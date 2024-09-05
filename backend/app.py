@@ -13,6 +13,8 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///models.db')
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config['MODEL_FILES'] = 'modelFiles'
+app.config['SCALER_FILES'] = 'scalerFiles'
+app.config['ENCODING_FILES'] = 'encodingFiles'
 app.config['HEATMAP_FILES'] = 'heatmaps'
 
 

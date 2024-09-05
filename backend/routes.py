@@ -4,6 +4,8 @@ from models import Friend
 from datetime import datetime
 from models import Model
 import os
+import joblib
+import sklearn
 import json
 from models import Feature
 # Get all friends
@@ -119,17 +121,31 @@ def create_model():
         # Extract file data
         filename = request.files['filename']
         heatmap_image = request.files['heatmap_image']
+        scalerfile = request.files['scalerfile']
+        encodingfile = request.files['encodingfile']
 
         # Validate filenames
-        if not filename.filename or not heatmap_image.filename:
+        if not filename.filename :
             return jsonify({"error": "Invalid file(s)"}), 400
 
         # Save files with timestamp in the filename
         filename_path = os.path.join(app.config['MODEL_FILES'], get_timestamped_filename(filename.filename))
-        heatmap_image_path = os.path.join(app.config['HEATMAP_FILES'], get_timestamped_filename(heatmap_image.filename))
-
         filename.save(filename_path)
-        heatmap_image.save(heatmap_image_path)
+        
+        if scalerfile :
+          scalerfile_path = os.path.join(app.config['SCALER_FILES'], get_timestamped_filename(scalerfile.filename))
+          scalerfile.save(scalerfile_path)
+
+        if encodingfile :
+          encodingfile_path = os.path.join(app.config['ENCODING_FILES'], get_timestamped_filename(encodingfile.filename))
+          encodingfile.save(encodingfile_path)
+        
+        if heatmap_image :
+          heatmap_image_path = os.path.join(app.config['HEATMAP_FILES'], get_timestamped_filename(heatmap_image.filename))
+          heatmap_image.save(heatmap_image_path)
+
+    
+      
 
         # Convert features and algorithm_used to JSON
         features_list = json.loads(features)
@@ -140,7 +156,9 @@ def create_model():
             name=name,
             description=description,
             filename=get_timestamped_filename(filename.filename),
-            heatmap_image=get_timestamped_filename(heatmap_image.filename),
+            scalerfile=get_timestamped_filename(scalerfile.filename) if scalerfile else None,
+            encodingfile=get_timestamped_filename(encodingfile.filename) if encodingfile else None,
+            heatmap_image=get_timestamped_filename(heatmap_image.filename) if heatmap_image else None,
             about_dataset=about_dataset,
             best_algorithm=best_algorithm,
             features=json.dumps(features_list),
@@ -260,4 +278,114 @@ def delete_model(id):
     except Exception as e:
         db.session.rollback()
         print("Error:", str(e))  # For debugging; remove or handle properly in production
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/models/predict", methods=["POST"])
+def predict():
+    try:
+        # Retrieve formData and modelId from the request
+        formData = request.json.get("formData")  # Extract formData as a dictionary
+        modelId = request.json.get("modelId")    # Extract modelId as a string or int
+        print(formData)
+
+        if not modelId or not formData:
+            return jsonify({"error": "Model ID and form data are required"}), 400
+
+        # Retrieve the data record from the database using modelId
+        data_record = Model.query.get(modelId)  # Replace DataModel with your actual model class
+    
+        if not data_record:
+            return jsonify({"error": "Data record not found"}), 404
+
+        data = data_record.to_json()
+       
+        # Extract the model filename from the data record
+        model_filename = data_record.to_json().get('filename')  # Assuming 'filename' contains the path to the .pkl file
+        scaler_filename = data_record.to_json().get('scalerfile')  # Assuming 'scalerfile' contains the path to the scaler .pkl file
+        encoding_filename = data_record.to_json().get('encodingfile')  # Assuming 'encodingfile' contains the path to the encoder .pkl file
+        
+        if not model_filename:
+            return jsonify({"error": "Model filename not found in record"}), 500
+
+        # Construct the full path to the model file
+        model_file_path = os.path.join(app.config['MODEL_FILES'], model_filename)
+        
+        scaler = None
+        encoder = None
+        
+        # Load the scaler if it exists
+        if scaler_filename:
+            scaler_file_path = os.path.join(app.config['SCALER_FILES'], scaler_filename)
+            if os.path.exists(scaler_file_path):
+                scaler = joblib.load(scaler_file_path)
+            else:
+                print(f"Scaler file not found at {scaler_file_path}")
+        
+        # Load the encoder if it exists
+        if encoding_filename:
+            encoding_file_path = os.path.join(app.config['ENCODING_FILES'], encoding_filename)
+            if os.path.exists(encoding_file_path):
+                encoder = joblib.load(encoding_file_path)
+            else:
+                print(f"Encoding file not found at {encoding_file_path}")
+
+        if not os.path.exists(model_file_path):
+            return jsonify({"error": "Model file not found"}), 404
+
+        # Get the features field from the record
+        features = data_record.to_json().get('features')  # Assuming features is a list of dictionaries
+        
+        # Load the model from file
+        model = joblib.load(model_file_path)
+
+        input_data = []
+        for feature in features:
+            field_name = feature['name']
+            data_type = feature['datatype']
+            value = formData.get(field_name)
+
+            if value is None:
+                return jsonify({"error": f"Missing data for feature: {field_name}"}), 400
+
+            # Convert value based on data type
+            if data_type == 'float':
+                value = float(value)
+            elif data_type == 'int':
+                value = int(value)
+            elif data_type == 'string':
+                value = str(value)
+            else:
+                return jsonify({"error": f"Unsupported data type: {data_type}"}), 400
+
+            input_data.append(value)
+
+        # Convert input_data to a 2D array (list of lists) for the model
+        input_data = [input_data]
+        print(input_data)
+
+        # Apply encoding and scaling if necessary
+        if encoder is not None:
+            try:
+                input_data = encoder.transform(input_data)  # Apply encoder if exists
+            except Exception as e:
+                return jsonify({"error": f"Encoding error: {str(e)}"}), 500
+
+        if scaler is not None:
+            try:
+                input_data = scaler.transform(input_data)  # Apply scaler if exists
+            except Exception as e:
+                return jsonify({"error": f"Scaling error: {str(e)}"}), 500
+
+
+        print(input_data)
+        # Perform the prediction
+        prediction = model.predict(input_data)
+        print(prediction)
+
+        # Send the prediction result as the response
+        return jsonify({"prediction": prediction[0]}), 200
+
+    except Exception as e:
+        print("Error:", str(e))  # For debugging purposes
         return jsonify({"error": str(e)}), 500
