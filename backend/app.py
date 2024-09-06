@@ -1,8 +1,7 @@
-from flask import Flask, send_from_directory, jsonify
+from flask import Flask, send_from_directory, jsonify,request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import os
-
 app = Flask(__name__)
 
 # Configure CORS
@@ -16,7 +15,6 @@ app.config['MODEL_FILES'] = 'modelFiles'
 app.config['SCALER_FILES'] = 'scalerFiles'
 app.config['ENCODING_FILES'] = 'encodingFiles'
 app.config['HEATMAP_FILES'] = 'heatmaps'
-
 
 
 db = SQLAlchemy(app)

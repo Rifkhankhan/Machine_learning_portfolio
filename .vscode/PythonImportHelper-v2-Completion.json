@@ -98,6 +98,14 @@
         "documentation": {}
     },
     {
+        "label": "request",
+        "importPath": "flask",
+        "description": "flask",
+        "isExtraImport": true,
+        "detail": "flask",
+        "documentation": {}
+    },
+    {
         "label": "jsonify",
         "importPath": "flask",
         "description": "flask",
@@ -253,6 +261,14 @@
         "importPath": "sklearn",
         "description": "sklearn",
         "detail": "sklearn",
+        "documentation": {}
+    },
+    {
+        "label": "wraps",
+        "importPath": "functools",
+        "description": "functools",
+        "isExtraImport": true,
+        "detail": "functools",
         "documentation": {}
     },
     {
@@ -668,6 +684,24 @@
         "documentation": {}
     },
     {
+        "label": "check_password",
+        "kind": 2,
+        "importPath": "backend.routes",
+        "description": "backend.routes",
+        "peekOfCode": "def check_password(password):\n    return password == SECRET_PASSWORD\ndef require_password(f):\n    @wraps(f)\n    def decorated_function(*args, **kwargs):\n        # Get the password from the form data\n        password = request.form.get('password')\n        print(password)\n        # Check if the password is correct\n        if not check_password(password):",
+        "detail": "backend.routes",
+        "documentation": {}
+    },
+    {
+        "label": "require_password",
+        "kind": 2,
+        "importPath": "backend.routes",
+        "description": "backend.routes",
+        "peekOfCode": "def require_password(f):\n    @wraps(f)\n    def decorated_function(*args, **kwargs):\n        # Get the password from the form data\n        password = request.form.get('password')\n        print(password)\n        # Check if the password is correct\n        if not check_password(password):\n            return jsonify({\"error\": \"Unauthorized\"}), 401\n        return f(*args, **kwargs)",
+        "detail": "backend.routes",
+        "documentation": {}
+    },
+    {
         "label": "get_friends",
         "kind": 2,
         "importPath": "backend.routes",
@@ -708,7 +742,7 @@
         "kind": 2,
         "importPath": "backend.routes",
         "description": "backend.routes",
-        "peekOfCode": "def get_timestamped_filename(filename):\n    # Extract the file extension and base name\n    base_name, file_ext = os.path.splitext(filename)\n    # Generate a timestamp\n    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')\n    # Combine the base name with the timestamp and extension\n    return f\"{base_name}-{timestamp}{file_ext}\"\n@app.route(\"/api/models\", methods=[\"POST\"])\ndef create_model():\n    try:",
+        "peekOfCode": "def get_timestamped_filename(filename):\n    # Extract the file extension and base name\n    base_name, file_ext = os.path.splitext(filename)\n    # Generate a timestamp\n    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')\n    # Combine the base name with the timestamp and extension\n    return f\"{base_name}-{timestamp}{file_ext}\"\n@app.route(\"/api/models\", methods=[\"POST\"])\n@require_password\ndef create_model():",
         "detail": "backend.routes",
         "documentation": {}
     },
@@ -717,7 +751,7 @@
         "kind": 2,
         "importPath": "backend.routes",
         "description": "backend.routes",
-        "peekOfCode": "def create_model():\n    try:\n        # Check if files are present\n        if 'filename' not in request.files or 'heatmap_image' not in request.files:\n            return jsonify({\"error\": \"Missing required file(s)\"}), 400\n        # Extract form data\n        name = request.form.get(\"name\")\n        description = request.form.get(\"description\")\n        about_dataset = request.form.get(\"about_dataset\")\n        best_algorithm = request.form.get(\"best_algorithm\")",
+        "peekOfCode": "def create_model():\n    try:\n        # Check if files are present\n        if 'filename' not in request.files:\n            return jsonify({\"error\": \"Missing required file(s)\"}), 400\n        # Extract form data\n        name = request.form.get(\"name\")\n        description = request.form.get(\"description\")\n        about_dataset = request.form.get(\"about_dataset\")\n        best_algorithm = request.form.get(\"best_algorithm\")",
         "detail": "backend.routes",
         "documentation": {}
     },
@@ -744,7 +778,7 @@
         "kind": 2,
         "importPath": "backend.routes",
         "description": "backend.routes",
-        "peekOfCode": "def update_model(id):\n    try:\n        # Query the model by ID\n        model = Model.query.get(id)\n        if model is None:\n            return jsonify({\"error\": \"Model not found\"}), 404\n        # Extract form data\n        data = request.json\n        model.name = data.get(\"name\", model.name)\n        model.description = data.get(\"description\", model.description)",
+        "peekOfCode": "def update_model(id):\n    try:\n        # Query the model by ID\n        model = Model.query.get(id)\n        if model is None:\n            return jsonify({\"error\": \"Model not found\"}), 404\n         # Extract form data and files\n        data = request.form\n        files = request.files\n         # Validation for required fields",
         "detail": "backend.routes",
         "documentation": {}
     },
@@ -753,7 +787,7 @@
         "kind": 2,
         "importPath": "backend.routes",
         "description": "backend.routes",
-        "peekOfCode": "def delete_model(id):\n    try:\n        # Query the model by ID\n        model = Model.query.get(id)\n        if model is None:\n            return jsonify({\"error\": \"Model not found\"}), 404\n        db.session.delete(model)\n        db.session.commit()\n        return jsonify({\"msg\": \"Model deleted\"}), 200\n    except Exception as e:",
+        "peekOfCode": "def delete_model(id):\n    try:\n        # Query the model by ID\n        model = Model.query.get(id)\n        if model is None:\n            return jsonify({\"error\": \"Model not found\"}), 404\n        # Extract the file paths from the model\n        model_data = model.to_json()\n        model_filename = model_data.get('filename')\n        scaler_filename = model_data.get('scalerfile')",
         "detail": "backend.routes",
         "documentation": {}
     },
@@ -763,6 +797,15 @@
         "importPath": "backend.routes",
         "description": "backend.routes",
         "peekOfCode": "def predict():\n    try:\n        # Retrieve formData and modelId from the request\n        formData = request.json.get(\"formData\")  # Extract formData as a dictionary\n        modelId = request.json.get(\"modelId\")    # Extract modelId as a string or int\n        print(formData)\n        if not modelId or not formData:\n            return jsonify({\"error\": \"Model ID and form data are required\"}), 400\n        # Retrieve the data record from the database using modelId\n        data_record = Model.query.get(modelId)  # Replace DataModel with your actual model class",
+        "detail": "backend.routes",
+        "documentation": {}
+    },
+    {
+        "label": "SECRET_PASSWORD",
+        "kind": 5,
+        "importPath": "backend.routes",
+        "description": "backend.routes",
+        "peekOfCode": "SECRET_PASSWORD = os.getenv('SECRET_PASSWORD', 'default_password')\ndef check_password(password):\n    return password == SECRET_PASSWORD\ndef require_password(f):\n    @wraps(f)\n    def decorated_function(*args, **kwargs):\n        # Get the password from the form data\n        password = request.form.get('password')\n        print(password)\n        # Check if the password is correct",
         "detail": "backend.routes",
         "documentation": {}
     },

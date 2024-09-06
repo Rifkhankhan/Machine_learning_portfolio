@@ -48,6 +48,8 @@ class Model(db.Model):
   updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
   def to_json(self):
+      
+      
       return {
           "id": self.id,
           "name": self.name,

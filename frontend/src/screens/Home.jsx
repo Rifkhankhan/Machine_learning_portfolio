@@ -29,6 +29,11 @@ export const BASE_URL =
 
 function Home() {
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: passwordisOpen,
+    onOpen: passwordonOpen,
+    onClose: passwordonClose,
+  } = useDisclosure();
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -46,6 +51,7 @@ function Home() {
     algorithm_used: [""],
     model_type: "",
     source_link: "",
+    password: "",
   });
   const toast = useToast();
 
@@ -90,7 +96,7 @@ function Home() {
         if (response.ok) {
           const result = await response.json();
 
-          console.log(result.models);
+          console.log(result);
 
           setModels([...result.models]);
 
@@ -106,6 +112,8 @@ function Home() {
     getModels();
   }, [setCurrentPage, currentPage]);
 
+  useEffect(() => {}, [models]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewModel({ ...newModel, [name]: value });
@@ -116,8 +124,25 @@ function Home() {
     setNewModel({ ...newModel, [name]: e.target.files[0] });
   };
 
+  // Handle save changes
+  const formatTheDatas = async () => {
+    try {
+      // e.stopPropagation(); // Prevent triggering card click
+      passwordonOpen(); // Open the modal
+    } catch (error) {
+      toast({
+        title: "An error occurred",
+        description: error.message,
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+        position: "top-center",
+      });
+    }
+  };
+
   const handleAddModel = async () => {
-    if (newModel.filename && newModel.heatmap_image) {
+    if (newModel.filename) {
       const formData = new FormData();
       formData.append("filename", newModel.filename);
       formData.append("scalerfile", newModel.scalerfile);
@@ -134,6 +159,7 @@ function Home() {
       );
       formData.append("model_type", newModel.model_type);
       formData.append("source_link", newModel.source_link);
+      formData.append("password", newModel.password);
 
       console.log(newModel);
 
@@ -154,6 +180,7 @@ function Home() {
             isClosable: true,
             position: "top-right",
           });
+          passwordonClose();
           onClose();
         } else {
           const error = await response.json();
@@ -180,7 +207,7 @@ function Home() {
     } else {
       toast({
         title: "File(s) missing.",
-        description: "Please upload both the .pkl file and the heatmap image.",
+        description: "Please upload Model .pkl file",
         status: "error",
         duration: 2000,
         isClosable: true,
@@ -453,6 +480,37 @@ function Home() {
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button colorScheme="teal" onClick={formatTheDatas}>
+              Save
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* password Modal */}
+      <Modal isOpen={passwordisOpen} onClose={passwordonClose} size="xl">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Enter Password</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Stack spacing={4}>
+              <FormControl>
+                <FormLabel>Password</FormLabel>
+                <Input
+                  required
+                  name="password"
+                  value={newModel.password}
+                  onChange={handleInputChange}
+                  placeholder="Enter the password"
+                />
+              </FormControl>
+            </Stack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" onClick={passwordonClose}>
               Cancel
             </Button>
             <Button colorScheme="teal" onClick={handleAddModel}>

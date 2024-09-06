@@ -65,7 +65,7 @@ const Navbar = () => {
               color="white"
               _hover={{ textDecoration: "underline" }}
             >
-              Rifkhan
+              Muhammed Rifkhan
             </Text>
           </Flex>
 
