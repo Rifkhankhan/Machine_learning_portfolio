@@ -11,8 +11,8 @@ import {
   Route,
   RouterProvider,
 } from "react-router-dom";
-import About from "./screens/about.jsx";
-import Contact from "./screens/contact.jsx";
+import About from "./screens/About.jsx";
+import Contact from "./screens/Contact.jsx";
 import Home from "./screens/Home.jsx";
 
 const router = createBrowserRouter(
