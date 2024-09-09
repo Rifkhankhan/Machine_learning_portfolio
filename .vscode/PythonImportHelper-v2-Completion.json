@@ -41,6 +41,14 @@
         "documentation": {}
     },
     {
+        "label": "desc",
+        "importPath": "sqlalchemy",
+        "description": "sqlalchemy",
+        "isExtraImport": true,
+        "detail": "sqlalchemy",
+        "documentation": {}
+    },
+    {
         "label": "logging",
         "kind": 6,
         "isExtraImport": true,
@@ -796,7 +804,7 @@
         "kind": 2,
         "importPath": "backend.routes",
         "description": "backend.routes",
-        "peekOfCode": "def predict():\n    try:\n        # Retrieve formData and modelId from the request\n        formData = request.json.get(\"formData\")  # Extract formData as a dictionary\n        modelId = request.json.get(\"modelId\")    # Extract modelId as a string or int\n        print(formData)\n        if not modelId or not formData:\n            return jsonify({\"error\": \"Model ID and form data are required\"}), 400\n        # Retrieve the data record from the database using modelId\n        data_record = Model.query.get(modelId)  # Replace DataModel with your actual model class",
+        "peekOfCode": "def predict():\n    try:\n        # Retrieve formData and modelId from the request\n        formData = request.json.get(\"formData\")  # Extract formData as a dictionary\n        modelId = request.json.get(\"modelId\")    # Extract modelId as a string or int\n        if not modelId or not formData:\n            return jsonify({\"error\": \"Model ID and form data are required\"}), 400\n        # Retrieve the data record from the database using modelId\n        data_record = Model.query.get(modelId)  # Replace DataModel with your actual model class\n        if not data_record:",
         "detail": "backend.routes",
         "documentation": {}
     },

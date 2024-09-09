@@ -25,6 +25,7 @@ import {
   Select,
   Checkbox,
   useDisclosure,
+  CardFooter,
 } from "@chakra-ui/react";
 import { AddIcon, MinusIcon } from "@chakra-ui/icons";
 
@@ -307,6 +308,18 @@ const UserCard = ({ model, setModels }) => {
             {model.description}
           </Text>
         </CardBody>
+
+        <CardFooter
+          bg={useColorModeValue("gray.100", "gray.700")}
+          px={4}
+          py={2}
+          borderTopWidth={1}
+          borderTopColor={useColorModeValue("gray.200", "gray.600")}
+        >
+          <Text fontSize="sm" color="gray.500">
+            Best Algorithm: {model?.best_algorithm}
+          </Text>
+        </CardFooter>
       </Card>
 
       {/* Edit Modal */}

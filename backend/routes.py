@@ -5,6 +5,7 @@ from app import app, db
 from flask import request, jsonify
 from models import Friend
 from datetime import datetime
+from sqlalchemy import desc
 from models import Model
 import os
 import joblib
@@ -150,10 +151,10 @@ def create_model():
             return jsonify({"error": "Missing required field"}), 400
         
         # Extract file data
-        filename = request.files['filename']
-        heatmap_image = request.files['heatmap_image']
-        scalerfile = request.files['scalerfile']
-        encodingfile = request.files['encodingfile']
+        filename = request.files.get('filename') if 'filename' in request.files else None
+        heatmap_image = request.files['heatmap_image']  if 'heatmap_image' in request.files else None
+        scalerfile = request.files['scalerfile'] if 'scalerfile' in request.files else None
+        encodingfile = request.files['encodingfile'] if 'encodingfile' in request.files else None
 
         # Validate filenames
         if not filename.filename:
@@ -206,10 +207,13 @@ def create_model():
 
         if not validate_features(features_list):
             return jsonify({"error": "Each feature must have non-empty 'name', 'datatype', and 'desc' fields"}), 400
-        new_filename = save_file(filename, 'MODEL_FILES')
-        new_scalerfile = save_file(scalerfile, 'SCALER_FILES')
-        new_encodingfile = save_file(encodingfile, 'ENCODING_FILES')
-        new_heatmap_image = save_file(heatmap_image, 'HEATMAP_FILES')
+        
+        # Save files if they exist, otherwise assign None
+        new_filename = save_file(filename, 'MODEL_FILES') if filename else None
+        new_scalerfile = save_file(scalerfile, 'SCALER_FILES') if scalerfile else None
+        new_encodingfile = save_file(encodingfile, 'ENCODING_FILES') if encodingfile else None
+        new_heatmap_image = save_file(heatmap_image, 'HEATMAP_FILES') if heatmap_image else None
+        
         # Create new model instance
         new_model = Model(
             name=name,
@@ -250,7 +254,7 @@ def get_models():
 
         # Query with offset and limit
         total_count = db.session.query(Model).count()  # Get total count of models
-        models = db.session.query(Model).offset(offset).limit(limit).all()
+        models = db.session.query(Model).order_by(desc(Model.created_at)).offset(offset).limit(limit).all()
   
         # Convert the models to a list of dictionaries
         result = [model.to_json() for model in models]
@@ -535,7 +539,7 @@ def predict():
         # Retrieve formData and modelId from the request
         formData = request.json.get("formData")  # Extract formData as a dictionary
         modelId = request.json.get("modelId")    # Extract modelId as a string or int
-        print(formData)
+       
 
         if not modelId or not formData:
             return jsonify({"error": "Model ID and form data are required"}), 400
@@ -586,6 +590,7 @@ def predict():
         
         # Load the model from file
         model = joblib.load(model_file_path)
+     
 
         input_data = []
         for feature in features:
@@ -610,20 +615,40 @@ def predict():
 
         # Convert input_data to a 2D array (list of lists) for the model
         input_data = [input_data]
+    
         print(input_data)
+      
+   
 
         # Apply encoding and scaling if necessary
         if encoder is not None:
+            # Get the specific transformer for categorical columns (assuming the name is 'encoder')
+            categorical_encoder = encoder.named_transformers_.get('encoder')
             try:
+               # Check if it's an OneHotEncoder or LabelEncoder
+                if hasattr(categorical_encoder, 'categories_'):
+                    # If it's an OneHotEncoder, retrieve the categories
+                    categories = categorical_encoder.categories_[0]
+                    
+                elif hasattr(categorical_encoder, 'classes_'):
+                    # If it's a LabelEncoder, retrieve the classes
+                    categories = categorical_encoder.classes_[0]
+                  
                 input_data = encoder.transform(input_data)  # Apply encoder if exists
+                
             except Exception as e:
-                return jsonify({"error": f"Encoding error: {str(e)}"}), 500
+                return jsonify({"error": f"Encoding error: {str(e)}.  \n The categories are {categories}"}), 500
 
+
+        print(scaler)
+        # Get the specific transformer for numerical columns (assuming the name is 'scaler')
         if scaler is not None:
+      
             try:
                 input_data = scaler.transform(input_data)  # Apply scaler if exists
+                
             except Exception as e:
-                return jsonify({"error": f"Scaling error: {str(e)}"}), 500
+                return jsonify({"error": f"Scaling error: {str(e)} "}), 500
 
 
         print(input_data)
@@ -632,7 +657,7 @@ def predict():
         print(prediction)
 
         # Send the prediction result as the response
-        return jsonify({"prediction": prediction[0]}), 200
+        return jsonify({"prediction": prediction[0].tolist()})  # Convert to a list of native Python types}), 200
 
     except Exception as e:
         print("Error:", str(e))  # For debugging purposes

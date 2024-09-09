@@ -26,6 +26,7 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 import { useParams } from "react-router-dom";
+import Swal from "sweetalert2";
 
 export const BASE_URL =
   import.meta.env.MODE === "development" ? "http://127.0.0.1:5000/api" : "/api";
@@ -132,23 +133,25 @@ const View = () => {
       if (response.ok) {
         const result = await response.json();
 
-        console.log("Prediction result:", result.prediction);
+        console.log(result?.prediction);
 
-        toast({
-          title: "Model added.",
-          description: "Your new model has been added successfully.",
-          status: "success",
-          duration: 2000,
-          isClosable: true,
-          position: "top-right",
-        });
+        // Display an alert with SweetAlert2
         onClose();
+        Swal.fire({
+          title: "Prediction result!",
+          text:
+            result?.prediction === 0
+              ? "No"
+              : result?.prediction === 1
+              ? "Yes"
+              : result?.prediction,
+          icon: "success",
+        });
       } else {
         const error = await response.json();
         toast({
-          title: "Error adding model.",
-          description:
-            error.error || "An error occurred while adding the model.",
+          title: "Error Prediction.",
+          description: error.error || "An error occurred while Predicting.",
           status: "error",
           duration: 2000,
           isClosable: true,
