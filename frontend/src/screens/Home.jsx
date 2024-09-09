@@ -24,8 +24,7 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon, MinusIcon } from "@chakra-ui/icons";
 
-export const BASE_URL =
-  import.meta.env.MODE === "development" ? "http://127.0.0.1:5000/api" : "/api";
+import { BASE_URL } from "../App";
 
 function Home() {
   const { isOpen, onOpen, onClose } = useDisclosure();

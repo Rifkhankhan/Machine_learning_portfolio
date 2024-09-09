@@ -16,10 +16,6 @@ const UserGrid = ({
     }
   };
 
-  useEffect(() => {}, [models]);
-
-  console.log(models);
-
   return (
     <>
       <Grid

@@ -106,14 +106,6 @@
         "documentation": {}
     },
     {
-        "label": "request",
-        "importPath": "flask",
-        "description": "flask",
-        "isExtraImport": true,
-        "detail": "flask",
-        "documentation": {}
-    },
-    {
         "label": "jsonify",
         "importPath": "flask",
         "description": "flask",
@@ -534,7 +526,7 @@
         "kind": 2,
         "importPath": "backend.app",
         "description": "backend.app",
-        "peekOfCode": "def get_heatmap_image(filename):\n    return send_from_directory(app.config['HEATMAP_FILES'], filename)\n# Serve static files\n@app.route(\"/\", defaults={\"filename\": \"\"})\n@app.route(\"/<path:filename>\")\ndef index(filename):\n    if not filename:\n        filename = \"index.html\"\n    return send_from_directory(dist_folder, filename)\n# Import API routes",
+        "peekOfCode": "def get_heatmap_image(filename):\n    return send_from_directory(app.config['HEATMAP_FILES'], filename)\n# Serve static files\n@app.route(\"/\", defaults={\"filename\": \"\"})\n@app.route(\"/<path:filename>\")\ndef index(filename):\n    print(f\"Serving static file: {filename}\")\n    if not filename:\n        filename = \"index.html\"\n    return send_from_directory(dist_folder, filename)",
         "detail": "backend.app",
         "documentation": {}
     },
@@ -543,7 +535,16 @@
         "kind": 2,
         "importPath": "backend.app",
         "description": "backend.app",
-        "peekOfCode": "def index(filename):\n    if not filename:\n        filename = \"index.html\"\n    return send_from_directory(dist_folder, filename)\n# Import API routes\nimport routes\n# Initialize database migrations\nfrom flask_migrate import Migrate\nmigrate = Migrate(app, db)\n# Error handling",
+        "peekOfCode": "def index(filename):\n    print(f\"Serving static file: {filename}\")\n    if not filename:\n        filename = \"index.html\"\n    return send_from_directory(dist_folder, filename)\n# Fallback route to handle client-side routing\n@app.route(\"/<path:path>\")\ndef catch_all(path):\n    return send_from_directory(dist_folder, \"index.html\")\n# Import API routes",
+        "detail": "backend.app",
+        "documentation": {}
+    },
+    {
+        "label": "catch_all",
+        "kind": 2,
+        "importPath": "backend.app",
+        "description": "backend.app",
+        "peekOfCode": "def catch_all(path):\n    return send_from_directory(dist_folder, \"index.html\")\n# Import API routes\nimport routes\n# Initialize database migrations\nfrom flask_migrate import Migrate\nmigrate = Migrate(app, db)\n# Error handling\n@app.errorhandler(404)\ndef page_not_found(error):",
         "detail": "backend.app",
         "documentation": {}
     },
@@ -570,7 +571,7 @@
         "kind": 5,
         "importPath": "backend.app",
         "description": "backend.app",
-        "peekOfCode": "app = Flask(__name__)\n# Configure CORS\n# Comment out or configure properly if not needed in production\nCORS(app, resources={r\"/api/*\": {\"origins\": \"*\"}})\n# Configure the database (update URI for production as needed)\napp.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///models.db')\napp.config[\"SQLALCHEMY_TRACK_MODIFICATIONS\"] = False\napp.config['MODEL_FILES'] = 'modelFiles'\napp.config['SCALER_FILES'] = 'scalerFiles'\napp.config['ENCODING_FILES'] = 'encodingFiles'",
+        "peekOfCode": "app = Flask(__name__)\n# Configure CORS\nCORS(app, resources={r\"/api/*\": {\"origins\": \"*\"}})\n# Configure the database (update URI for production as needed)\napp.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///models.db')\napp.config[\"SQLALCHEMY_TRACK_MODIFICATIONS\"] = False\napp.config['MODEL_FILES'] = 'modelFiles'\napp.config['SCALER_FILES'] = 'scalerFiles'\napp.config['ENCODING_FILES'] = 'encodingFiles'\napp.config['HEATMAP_FILES'] = 'heatmaps'",
         "detail": "backend.app",
         "documentation": {}
     },
@@ -651,7 +652,7 @@
         "kind": 5,
         "importPath": "backend.app",
         "description": "backend.app",
-        "peekOfCode": "dist_folder = os.path.join(frontend_folder, \"dist\")\n# Serve heatmap images\n@app.route('/api/heatmaps/<filename>')\ndef get_heatmap_image(filename):\n    return send_from_directory(app.config['HEATMAP_FILES'], filename)\n# Serve static files\n@app.route(\"/\", defaults={\"filename\": \"\"})\n@app.route(\"/<path:filename>\")\ndef index(filename):\n    if not filename:",
+        "peekOfCode": "dist_folder = os.path.join(frontend_folder, \"dist\")\n# Serve heatmap images\n@app.route('/api/heatmaps/<filename>')\ndef get_heatmap_image(filename):\n    return send_from_directory(app.config['HEATMAP_FILES'], filename)\n# Serve static files\n@app.route(\"/\", defaults={\"filename\": \"\"})\n@app.route(\"/<path:filename>\")\ndef index(filename):\n    print(f\"Serving static file: {filename}\")",
         "detail": "backend.app",
         "documentation": {}
     },
