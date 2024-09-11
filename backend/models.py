@@ -42,7 +42,6 @@ class Model(db.Model):
   hyperparameter = db.Column(db.Text, nullable=True)
   cross_validation = db.Column(db.Float(precision=3), nullable=True)
   matrices = db.Column(db.Text, nullable=True)
-  model_comparision = db.Column(db.Text, nullable=True)
   confusion_matrices = db.Column(db.Text, nullable=True)
   final_matrices = db.Column(db.Text, nullable=True)
   final_confusion_matrices = db.Column(db.Text, nullable=True)
@@ -52,6 +51,7 @@ class Model(db.Model):
   description = db.Column(db.Text, nullable=False)
   heatmap_image = db.Column(db.String(200), nullable=True)
   algorithm_used = db.Column(db.Text, nullable=False)  # Store JSON as string
+  result = db.Column(db.Text, nullable=True)  # Store JSON as string
   best_algorithm = db.Column(db.String(100), nullable=True)
   model_type = db.Column(db.Text, nullable=False)
   source_link = db.Column(db.String(200), nullable=True)
@@ -67,9 +67,15 @@ class Model(db.Model):
           "description": self.description,
           "filename": self.filename,
           "scalerfile": self.scalerfile,
+          "matrices": self.matrices,
+          "final_matrices": self.final_matrices,
+          "cross_validation": self.cross_validation,
+          "confusion_matrices": self.confusion_matrices,
+          "final_confusion_matrices": self.final_confusion_matrices,
           "encodingfile": self.encodingfile,
           "heatmap_image": self.heatmap_image,
           "about_dataset": self.about_dataset,
+          "dataset": self.dataset,
           "best_algorithm": self.best_algorithm,
           "features": json.loads(self.features),
           "algorithm_used": json.loads(self.algorithm_used),

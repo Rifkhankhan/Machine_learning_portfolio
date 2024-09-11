@@ -42,7 +42,7 @@ function Home() {
     name: "",
     description: "",
     objective: "",
-    dataset: "",
+    dataset: null,
     filename: null,
     data_cleaning: [],
     feature_creation: [{ name: "", datatype: "", desc: "", calculate: false }],

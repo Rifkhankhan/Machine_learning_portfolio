@@ -185,7 +185,7 @@ const View = () => {
       )}
       <Container maxW="container.md" py={8}>
         <Stack spacing={6}>
-          <Heading as="h1" size="xl" textAlign="center">
+          <Heading as="h1" size="xl" texstAlign="center">
             {model?.name}
           </Heading>
           <Box>
@@ -196,7 +196,6 @@ const View = () => {
               {model?.description || "No description available"}
             </Text>
           </Box>
-
           <Box>
             <Heading as="h2" size="lg" mb={4}>
               Model Objectives
@@ -205,13 +204,31 @@ const View = () => {
               {model?.objectives || "No description available"}
             </Text>
           </Box>
-
           <Box>
             <Heading as="h2" size="lg" mb={4}>
               About Dataset
             </Heading>
             <Text fontSize="md">{model?.about_dataset}</Text>
           </Box>
+          {/* print the dataset as table */}
+
+          {model?.dataset && (
+            <Box>
+              <Heading as="h2" size="lg" mb={4}>
+                Dataset
+              </Heading>
+              <Text fontSize="md">{model?.dataset}</Text>
+            </Box>
+          )}
+          {/* Data Cleaning operration  */}
+          {model?.data_cleaning && (
+            <Box>
+              <Heading as="h2" size="lg" mb={4}>
+                Data Cleaning Process
+              </Heading>
+              <Text fontSize="md">{model?.data_cleaning}</Text>
+            </Box>
+          )}
 
           <Box>
             <Heading as="h2" size="lg" mb={4}>
@@ -226,26 +243,14 @@ const View = () => {
             </List>
           </Box>
 
-          <Box>
-            <Heading as="h2" size="lg" mb={4}>
-              Dataset
-            </Heading>
-            <Text fontSize="md">{model?.dataset}</Text>
-          </Box>
-
-          <Box>
-            <Heading as="h2" size="lg" mb={4}>
-              Data Cleaning Process
-            </Heading>
-            <Text fontSize="md">{model?.data_cleaning}</Text>
-          </Box>
-
-          <Box>
-            <Heading as="h2" size="lg" mb={4}>
-              Feature Creation
-            </Heading>
-            <Text fontSize="md">{model?.data_cleaning}</Text>
-          </Box>
+          {model?.feature_creation && (
+            <Box>
+              <Heading as="h2" size="lg" mb={4}>
+                Feature Creation
+              </Heading>
+              <Text fontSize="md">{model?.data_cleaning}</Text>
+            </Box>
+          )}
 
           {model?.heatmap_image && (
             <Box mb={4}>
@@ -275,6 +280,91 @@ const View = () => {
             </Text>
           </Box>
 
+          {/* cross validation */}
+          {model?.cross_validation && (
+            <Box>
+              <Heading as="h2" size="lg" mb={4}>
+                Cross Validation
+              </Heading>
+            </Box>
+          )}
+          {/* Matrices */}
+
+          {model?.matrices && (
+            <Box mb={4}>
+              <Heading as="h2" size="lg" mb={4}>
+                Matrices
+              </Heading>
+
+              <Image
+                src={`${BASE_URL}/matricesFiles/${model.matricesFiles}`}
+                alt=" matrices Visualization"
+                borderRadius="md"
+                boxSize="full"
+                objectFit="cover"
+              />
+            </Box>
+          )}
+
+          {model?.confusion_matrices && (
+            <Box mb={4}>
+              <Heading as="h2" size="lg" mb={4}>
+                Confusion Matrices
+              </Heading>
+
+              <Image
+                src={`${BASE_URL}/confusionMatricesFiles/${model.confusion_matrices}`}
+                alt=" confusion_matrices Visualization"
+                borderRadius="md"
+                boxSize="full"
+                objectFit="cover"
+              />
+            </Box>
+          )}
+          {/* Hyperparameter */}
+
+          {model?.hyperparameter && (
+            <Box>
+              <Heading as="h2" size="lg" mb={4}>
+                Hyperparameter
+              </Heading>
+            </Box>
+          )}
+          {/* Confusion Matrices After using Hyperparameter */}
+
+          {model?.final_confusion_matrices && (
+            <Box>
+              <Heading as="h2" size="lg" mb={4}>
+                Confusion Matrices After using Hyperparameter
+              </Heading>
+
+              <Image
+                src={`${BASE_URL}/finalConfusionMatricesFiles/${model.final_confusion_matrices}`}
+                alt="final_confusion_matrices Visualization"
+                borderRadius="md"
+                boxSize="full"
+                objectFit="cover"
+              />
+            </Box>
+          )}
+
+          {/* Matrices After using Hyperparameter */}
+          {model?.final_matrices && (
+            <Box>
+              <Heading as="h2" size="lg" mb={4}>
+                Matrices After using Hyperparameter
+              </Heading>
+
+              <Image
+                src={`${BASE_URL}/finalMatricesFiles/${model.final_matrices}`}
+                alt="final_confusion_matrices Visualization"
+                borderRadius="md"
+                boxSize="full"
+                objectFit="cover"
+              />
+            </Box>
+          )}
+
           <Box>
             <Heading as="h2" size="lg" mb={4}>
               File Information
@@ -295,7 +385,6 @@ const View = () => {
               </a>
             </Text>
           </Box>
-
           <IconButton
             aria-label="Add Model"
             icon={<AddIcon />}
@@ -309,7 +398,6 @@ const View = () => {
             fontSize="xl"
             onClick={onOpen}
           />
-
           <Modal isOpen={isOpen} onClose={onClose}>
             <ModalOverlay />
             <ModalContent>

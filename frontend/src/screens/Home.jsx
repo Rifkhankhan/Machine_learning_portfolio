@@ -1,6 +1,7 @@
 import UserGrid from "./../components/UserGrid";
 import { useEffect, useState } from "react";
 import { USERS } from "./../dummy/dummy";
+import Papa from "papaparse";
 import {
   Box,
   Button,
@@ -38,89 +39,35 @@ function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [models, setModels] = useState();
+  const [datasetFeatures, setDatasetFeatures] = useState();
   const [newModel, setNewModel] = useState({
     name: "",
     description: "",
-    objective: "",
+    objectives: "",
     dataset: "",
     filename: null,
     data_cleaning: [],
     feature_creation: [{ name: "", datatype: "", desc: "", calculate: false }],
+    cross_validation: "",
+    hyperparameter: [{ name: "", value: "" }],
+    matrices: null,
+    confusion_matrices: null,
+    final_confusion_matrices: null,
+    final_matrices: null,
     encodingfile: null,
     scalerfile: null,
-    cross_validation: "",
     about_dataset: "",
     best_algorithm: "",
     heatmap_image: null,
     features: [{ name: "", datatype: "", desc: "", calculate: false }],
-    hyperparameter: [{ name: "", value: "" }],
-    matrices: [
-      { name: "Accuracy", value: "", type: "classification" },
-      { name: "Precision", value: "", type: "classification" },
-      { name: "Recall (Sensitivity)", value: "", type: "classification" },
-      { name: "F1 Score", value: "", type: "classification" },
-      {
-        name: "Area Under the ROC Curve (AUC-ROC)",
-        value: "",
-        type: "classification",
-      },
-      {
-        name: "Area Under the Precision-Recall Curve (AUC-PR)",
-        value: "",
-        type: "classification",
-      },
-      {
-        name: "Matthews Correlation Coefficient (MCC)",
-        value: "",
-        type: "classification",
-      },
-
-      { name: "Mean Absolute Error (MAE)", value: "", type: "regression" },
-      { name: "Mean Squared Error (MSE)", value: "", type: "regression" },
-      { name: "Root Mean Squared Error (RMSE)", value: "", type: "regression" },
-      {
-        name: "R-squared (Coefficient of Determination)",
-        value: "",
-        type: "regression",
-      },
-      {
-        name: "Mean Absolute Percentage Error (MAPE)",
-        value: "",
-        type: "regression",
-      },
-
-      { name: "Silhouette Score", value: "", type: "clustering" },
-      { name: "Davies-Bouldin Index", value: "", type: "clustering" },
-      { name: "Calinski-Harabasz Index", value: "", type: "clustering" },
-
-      { name: "Mean Reciprocal Rank (MRR)", value: "", type: "ranking" },
-      {
-        name: "Normalized Discounted Cumulative Gain (NDCG)",
-        value: "",
-        type: "ranking",
-      },
-      { name: "Precision at k (P@k)", value: "", type: "ranking" },
-    ],
-    confusion_matrices: [
-      {
-        algorithm: "", // Example algorithm
-        metrics: [
-          { name: "TP", value: "" },
-          { name: "TN", value: "" },
-          { name: "FP", value: "" },
-          { name: "FN", value: "" },
-        ],
-      },
-    ],
     algorithm_used: [""],
     model_type: "",
+    result: [],
     source_link: "",
     password: "",
   });
-
-  console.log(newModel);
-
   const toast = useToast();
+  console.log(newModel);
 
   // Handle changes to the feature input fields
   const handleFeatureChange = (index, e, field) => {
@@ -133,104 +80,22 @@ function Home() {
     setNewModel({ ...newModel, features: updatedFeatures });
   };
 
-  const handleCreatedFeatureChange = (index, e, field) => {
-    const updatedFeatures = [...newModel.feature_creation];
-    if (field === "calculate") {
-      updatedFeatures[index][field] = e.target.checked;
-    } else {
-      updatedFeatures[index][field] = e.target.value;
-    }
-    setNewModel({ ...newModel, feature_creation: updatedFeatures });
-  };
-
-  const handleParameterChange = (index, e, field) => {
-    const updatedFeatures = [...newModel.hyperparameter];
-
-    setNewModel({ ...newModel, hyperparameter: updatedFeatures });
-  };
-
-  const handleMatricChange = (index, e, field) => {
-    const updatedFeatures = [...newModel.matrices];
-
-    setNewModel({ ...newModel, matrices: updatedFeatures });
-  };
-
   // Handle adding new features
-
   const handleAddFeature = () => {
-    setNewModel((prevModel) => ({
-      ...prevModel,
+    setNewModel({
+      ...newModel,
       features: [
-        ...prevModel.features,
+        ...newModel.features,
         { name: "", datatype: "", desc: "", calculate: false },
       ],
-      matrices: [
-        ...prevModel.matrices,
-        {
-          algorithm: "",
-          metrics: [{ name: "", value: "" }],
-        },
-      ],
-    }));
-  };
-
-  const handleAddParameter = () => {
-    setNewModel({
-      ...newModel,
-      hyperparameter: [...newModel.hyperparameter, { name: "", value: "" }],
-    });
-  };
-
-  const handleAddCreateFeature = () => {
-    setNewModel({
-      ...newModel,
-      feature_creation: [
-        ...newModel.feature_creation,
-        { name: "", datatype: "", desc: "", calculate: false },
-      ],
-    });
-  };
-
-  const handleAddMatriceFeature = () => {
-    setNewModel({
-      ...newModel,
-      matrices: [...newModel.matrices, { name: "", value: "", desc: "" }],
     });
   };
 
   // Handle removing a feature
   const handleRemoveFeature = (index) => {
-    // Remove the feature at the specified index
     const updatedFeatures = [...newModel.features];
     updatedFeatures.splice(index, 1);
-
-    // Remove the corresponding matrix entry
-    const updatedMatrices = [...newModel.matrices];
-    updatedMatrices.splice(index, 1);
-
-    setNewModel({
-      ...newModel,
-      features: updatedFeatures,
-      matrices: updatedMatrices,
-    });
-  };
-
-  const handleRemoveParameter = (index) => {
-    const updatedFeatures = [...newModel.hyperparameter];
-    updatedFeatures.splice(index, 1);
-    setNewModel({ ...newModel, hyperparameter: updatedFeatures });
-  };
-
-  const handleCreatedFeatureRemoveFeature = (index) => {
-    const updatedFeatures = [...newModel.feature_creation];
-    updatedFeatures.splice(index, 1);
-    setNewModel({ ...newModel, feature_creation: updatedFeatures });
-  };
-
-  const handleRemoveMatrices = (index) => {
-    const updatedFeatures = [...newModel.matrices];
-    updatedFeatures.splice(index, 1);
-    setNewModel({ ...newModel, matrices: updatedFeatures });
+    setNewModel({ ...newModel, features: updatedFeatures });
   };
 
   useEffect(() => {
@@ -264,13 +129,98 @@ function Home() {
   useEffect(() => {}, [models]);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    if (name === "result") {
+      value = datasetFeatures[value];
+    }
     setNewModel({ ...newModel, [name]: value });
   };
 
   const handleFileChange = (e) => {
     const { name } = e.target;
-    setNewModel({ ...newModel, [name]: e.target.files[0] });
+    const file = e.target.files[0];
+
+    if (file) {
+      // Update the file in newModel state
+      setNewModel({ ...newModel, [name]: file });
+
+      // Check if the file is a CSV and then parse it
+      if (file.type === "text/csv") {
+        const reader = new FileReader();
+
+        reader.onload = (event) => {
+          Papa.parse(event.target.result, {
+            complete: (result) => {
+              const data = result.data;
+              const csvHeadings = data[0]; // First row (headings)
+              const allrows = data.slice(1); // Next 5 rows for analysis
+              const features = analyzeColumns(csvHeadings, allrows);
+              setDatasetFeatures(features);
+              // Update the state with CSV headings and column analysis
+              setNewModel((prevModel) => ({
+                ...prevModel,
+                features, // Data type and description for each column in the desired format
+              }));
+            },
+            header: false,
+          });
+        };
+
+        reader.readAsText(file);
+      }
+    }
+  };
+
+  // Analyze each column and determine data type, description, and set calculate to false
+  const analyzeColumns = (headings, rows) => {
+    return headings.map((heading, colIndex) => {
+      const colData = rows.map((row) => row[colIndex]); // Get data for each column
+      const datatype = detectDataType(colData); // Detect data type (int, float, string)
+      const desc = generateDescription(colData, datatype); // Generate description based on data type
+
+      return {
+        name: heading,
+        datatype,
+        desc,
+        calculate: false, // Default value for calculate
+      };
+    });
+  };
+
+  // Detect the data type for a column (int, float, or string)
+  const detectDataType = (colData) => {
+    let isInt = true;
+    let isFloat = true;
+
+    for (const value of colData) {
+      if (!isNaN(value)) {
+        if (value.includes(".")) {
+          isInt = false;
+        }
+      } else {
+        isInt = false;
+        isFloat = false;
+        break;
+      }
+    }
+
+    if (isInt) return "int";
+    if (isFloat) return "float";
+    return "string";
+  };
+
+  // Generate description based on data type
+  const generateDescription = (colData, dataType) => {
+    if (dataType === "int" || dataType === "float") {
+      return `Contains numerical data`;
+    } else if (dataType === "string") {
+      const uniqueValues = [...new Set(colData)];
+      if (uniqueValues.length <= 10) {
+        return `Categorical data with values: ${uniqueValues.join(", ")}`;
+      } else {
+        return `Contains string data`;
+      }
+    }
   };
 
   // Handle save changes
@@ -294,14 +244,33 @@ function Home() {
     if (newModel.filename) {
       const formData = new FormData();
       formData.append("filename", newModel.filename);
+      formData.append("matrices", newModel.matrices);
+      formData.append("confusion_matrices", newModel.confusion_matrices);
+      formData.append("final_matrices", newModel.final_matrices);
+      formData.append(
+        "final_confusion_matrices",
+        newModel.final_confusion_matrices
+      );
       formData.append("scalerfile", newModel.scalerfile);
+      formData.append("result", newModel.result);
       formData.append("encodingfile", newModel.encodingfile);
+      formData.append("dataset", newModel.dataset);
       formData.append("heatmap_image", newModel.heatmap_image);
       formData.append("name", newModel.name);
+      formData.append("objectives", newModel.objectives);
       formData.append("description", newModel.description);
       formData.append("about_dataset", newModel.about_dataset);
+      formData.append("cross_validation", newModel.cross_validation);
       formData.append("best_algorithm", newModel.best_algorithm);
       formData.append("features", JSON.stringify(newModel.features)); // Features now include `calculate`
+      formData.append(
+        "hyperparameter",
+        JSON.stringify(newModel.hyperparameter)
+      );
+      formData.append(
+        "feature_creation",
+        JSON.stringify(newModel.feature_creation)
+      );
       formData.append(
         "algorithm_used",
         JSON.stringify(newModel.algorithm_used)
@@ -389,27 +358,53 @@ function Home() {
     }));
   };
 
-  // confusion matrices
-  const handleConfusionMatricesInputChange = (
-    algorithm,
-    metricName,
-    newValue
-  ) => {
-    setNewModel((prevModel) => ({
-      ...prevModel,
-      confusion_matrices: prevModel.confusion_matrices.map((item) =>
-        item.algorithm === algorithm
-          ? {
-              ...item,
-              metrics: item.metrics.map((metric) =>
-                metric.name === metricName
-                  ? { ...metric, value: newValue }
-                  : metric
-              ),
-            }
-          : item
-      ),
-    }));
+  // new features
+  const handleCreatedFeatureChange = (index, e, field) => {
+    const updatedFeatures = [...newModel.feature_creation];
+    if (field === "calculate") {
+      updatedFeatures[index][field] = e.target.checked;
+    } else {
+      updatedFeatures[index][field] = e.target.value;
+    }
+    setNewModel({ ...newModel, feature_creation: updatedFeatures });
+  };
+
+  const handleCreatedFeatureRemoveFeature = (index) => {
+    const updatedFeatures = [...newModel.feature_creation];
+    updatedFeatures.splice(index, 1);
+    setNewModel({ ...newModel, feature_creation: updatedFeatures });
+  };
+
+  const handleAddCreateFeature = () => {
+    setNewModel({
+      ...newModel,
+      feature_creation: [
+        ...newModel.feature_creation,
+        { name: "", datatype: "", desc: "", calculate: false },
+      ],
+    });
+  };
+
+  // for hyperparameter
+
+  const handleParameterChange = (index, e, field) => {
+    const updatedFeatures = [...newModel.hyperparameter];
+    updatedFeatures[index][field] = e.target.value;
+
+    setNewModel({ ...newModel, hyperparameter: updatedFeatures });
+  };
+
+  const handleRemoveParameter = (index) => {
+    const updatedFeatures = [...newModel.hyperparameter];
+    updatedFeatures.splice(index, 1);
+    setNewModel({ ...newModel, hyperparameter: updatedFeatures });
+  };
+
+  const handleAddParameter = () => {
+    setNewModel({
+      ...newModel,
+      hyperparameter: [...newModel.hyperparameter, { name: "", value: "" }],
+    });
   };
 
   return (
@@ -457,10 +452,10 @@ function Home() {
               <FormControl>
                 <FormLabel>Objective</FormLabel>
                 <Textarea
-                  name="description"
-                  value={newModel.objective}
+                  name="objectives"
+                  value={newModel.objectives}
                   onChange={handleInputChange}
-                  placeholder="Enter a brief description"
+                  placeholder="Enter the  datasetFiles"
                 />
               </FormControl>
 
@@ -509,6 +504,51 @@ function Home() {
               </FormControl>
 
               <FormControl>
+                <FormLabel>Model File(.pkl)</FormLabel>
+                <Input
+                  type="file"
+                  name="filename"
+                  onChange={handleFileChange}
+                  accept=".pkl"
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>
+                  For this if you did encoding of categorical features(.pkl)
+                </FormLabel>
+                <Input
+                  type="file"
+                  name="encodingfile"
+                  onChange={handleFileChange}
+                  accept=".pkl"
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>
+                  For this if you did Feature Scalling to scale your numerical
+                  features(.pkl)
+                </FormLabel>
+                <Input
+                  type="file"
+                  name="scalerfile"
+                  onChange={handleFileChange}
+                  accept=".pkl"
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Heatmap Image</FormLabel>
+                <Input
+                  type="file"
+                  name="heatmap_image"
+                  onChange={handleFileChange}
+                  accept="image/*"
+                />
+              </FormControl>
+
+              <FormControl>
                 <FormLabel>Features</FormLabel>
                 {newModel.features.map((feature, index) => (
                   <Stack key={index} direction="row" align="center" mb={2}>
@@ -553,7 +593,49 @@ function Home() {
                   </Stack>
                 ))}
               </FormControl>
+              <FormControl>
+                <FormLabel>Model Type</FormLabel>
+                <Select
+                  name="model_type"
+                  value={newModel.model_type}
+                  onChange={handleInputChange}
+                  placeholder="Select model type"
+                >
+                  <option value="classification">Classification</option>
+                  <option value="regression">Regression</option>
+                  <option value="clustering">Clustering</option>
+                  <option value="dimensionality_reduction">
+                    Dimensionality Reduction
+                  </option>
+                  <option value="time_series">Time Series</option>
+                  <option value="natural_language_processing">
+                    Natural Language Processing
+                  </option>
+                </Select>
+              </FormControl>
 
+              {newModel?.model_type.toLowerCase() === "classification" && (
+                <FormControl>
+                  <FormLabel>Final Result</FormLabel>
+                  <Select
+                    name="result"
+                    value={datasetFeatures.findIndex(
+                      (algo) => algo.name === newModel.result.name
+                    )}
+                    onChange={handleInputChange}
+                    disabled={datasetFeatures.length === 0}
+                  >
+                    <option value="" disabled>
+                      Select the result feature
+                    </option>
+                    {datasetFeatures.map((algo, index) => (
+                      <option key={index} value={index}>
+                        {algo.name} - {algo.desc}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
               <FormControl>
                 <FormLabel>Created New Features</FormLabel>
                 {newModel.feature_creation.map((feature, index) => (
@@ -605,51 +687,6 @@ function Home() {
               </FormControl>
 
               <FormControl>
-                <FormLabel>Model File(.pkl)</FormLabel>
-                <Input
-                  type="file"
-                  name="filename"
-                  onChange={handleFileChange}
-                  accept=".pkl"
-                />
-              </FormControl>
-
-              <FormControl>
-                <FormLabel>
-                  For this if you did encoding of categorical features(.pkl)
-                </FormLabel>
-                <Input
-                  type="file"
-                  name="encodingfile"
-                  onChange={handleFileChange}
-                  accept=".pkl"
-                />
-              </FormControl>
-
-              <FormControl>
-                <FormLabel>
-                  For this if you did Feature Scalling to scale your numerical
-                  features(.pkl)
-                </FormLabel>
-                <Input
-                  type="file"
-                  name="scalerfile"
-                  onChange={handleFileChange}
-                  accept=".pkl"
-                />
-              </FormControl>
-
-              <FormControl>
-                <FormLabel>Heatmap Image</FormLabel>
-                <Input
-                  type="file"
-                  name="heatmap_image"
-                  onChange={handleFileChange}
-                  accept="image/*"
-                />
-              </FormControl>
-
-              <FormControl>
                 <FormLabel>Algorithm Used</FormLabel>
                 {newModel.algorithm_used.map((algo, index) => (
                   <Stack key={index} direction="row" align="center" mb={2}>
@@ -678,33 +715,6 @@ function Home() {
               </FormControl>
 
               <FormControl>
-                <FormLabel>Confusion Matrix Metrics</FormLabel>
-                {newModel.confusion_matrices.map((matrix) => (
-                  <Stack key={matrix.algorithm} direction="row" align="center">
-                    {/* <div key={matrix.algorithm}> */}
-                    <FormLabel>{matrix.algorithm}</FormLabel>
-                    {matrix.metrics.map((metric) => (
-                      <FormControl key={metric.name}>
-                        <FormLabel>{metric.name}</FormLabel>
-                        <Input
-                          type="number"
-                          value={metric.value}
-                          onChange={(e) =>
-                            handleInputChange(
-                              matrix.algorithm,
-                              metric.name,
-                              e.target.value
-                            )
-                          }
-                        />
-                      </FormControl>
-                    ))}
-                    {/* </div> */}
-                  </Stack>
-                ))}
-              </FormControl>
-
-              <FormControl>
                 <FormLabel>Best Algorithm</FormLabel>
                 <Select
                   name="best_algorithm"
@@ -719,6 +729,36 @@ function Home() {
                     </option>
                   ))}
                 </Select>
+              </FormControl>
+              <FormControl>
+                <FormLabel>Cross Validation</FormLabel>
+
+                <Input
+                  name="cross_validation"
+                  value={newModel.cross_validation}
+                  onChange={handleInputChange}
+                  placeholder="Enter information about the dataset"
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Matrices</FormLabel>
+                <Input
+                  type="file"
+                  name="matrices"
+                  onChange={handleFileChange}
+                  accept=".png,.jpg,.jpeg"
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Confusion matrices</FormLabel>
+                <Input
+                  type="file"
+                  name="confusion_matrices"
+                  onChange={handleFileChange}
+                  accept=".png,.jpg,.jpeg"
+                />
               </FormControl>
 
               <FormControl>
@@ -752,66 +792,29 @@ function Home() {
                   </Stack>
                 ))}
               </FormControl>
-              <FormControl>
-                <FormLabel>Model Type</FormLabel>
-                <Select
-                  name="model_type"
-                  value={newModel.model_type}
-                  onChange={handleInputChange}
-                  placeholder="Select model type"
-                >
-                  <option value="classification">Classification</option>
-                  <option value="regression">Regression</option>
-                  <option value="clustering">Clustering</option>
-                  <option value="dimensionality_reduction">
-                    Dimensionality Reduction
-                  </option>
-                  <option value="time_series">Time Series</option>
-                  <option value="natural_language_processing">
-                    Natural Language Processing
-                  </option>
-                </Select>
-              </FormControl>
-              {newModel.model_type && (
-                <FormControl>
-                  <FormLabel>Matrices</FormLabel>
-                  {newModel.matrices
-                    .filter(
-                      (feature) =>
-                        feature.type === newModel.model_type.toLowerCase()
-                    )
-                    .map((feature, index) => (
-                      <Stack key={index} direction="row" align="center" mb={2}>
-                        <Input
-                          placeholder=""
-                          value={feature.name}
-                          onChange={(e) => handleMatricChange(index, e, "name")}
-                        />
-                        <Input
-                          placeholder="Value"
-                          value={feature.value}
-                          onChange={(e) =>
-                            handleMatricChange(index, e, "value")
-                          }
-                        />
 
-                        <IconButton
-                          icon={<MinusIcon />}
-                          colorScheme="red"
-                          onClick={() => handleRemoveMatrices(index)}
-                          disabled={newModel.matrices.length === 1}
-                        />
-                        {index === newModel.matrices.length - 1 && (
-                          <IconButton
-                            icon={<AddIcon />}
-                            colorScheme="teal"
-                            onClick={handleAddMatriceFeature}
-                          />
-                        )}
-                      </Stack>
-                    ))}
-                </FormControl>
-              )}
+              <FormControl>
+                <FormLabel>
+                  Confusion Matrices After using Hyperparameter
+                </FormLabel>
+                <Input
+                  type="file"
+                  name="final_confusion_matrices"
+                  onChange={handleFileChange}
+                  accept=".png,.jpg,.jpeg"
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Matrices After using Hyperparameter</FormLabel>
+                <Input
+                  type="file"
+                  name="final_matrices"
+                  onChange={handleFileChange}
+                  accept=".png,.jpg,.jpeg"
+                />
+              </FormControl>
+
               <FormControl>
                 <FormLabel>Source Link</FormLabel>
                 <Input

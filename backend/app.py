@@ -15,6 +15,13 @@ app.config['MODEL_FILES'] = 'modelFiles'
 app.config['SCALER_FILES'] = 'scalerFiles'
 app.config['ENCODING_FILES'] = 'encodingFiles'
 app.config['HEATMAP_FILES'] = 'heatmaps'
+app.config['MATRICES_FILES'] = 'matricesFiles'
+app.config['DATASET_FILES'] = 'datasetFiles'
+app.config['FINAL_MATRICES_FILES'] = 'finalMatricesFiles'
+app.config['CONFUSION_MATRICES_FILES'] = 'confusionMatricesFiles'
+app.config['FINAL_CONFUSION_MATRICES_FILES'] = 'finalConfusionMatricesFiles'
+
+
 
 db = SQLAlchemy(app)
 
@@ -23,9 +30,27 @@ frontend_folder = os.path.join(os.getcwd(), "..", "frontend")
 dist_folder = os.path.join(frontend_folder, "dist")
 
 # Serve heatmap images
-@app.route('/api/heatmaps/<filename>')
-def get_heatmap_image(filename):
-    return send_from_directory(app.config['HEATMAP_FILES'], filename)
+@app.route('/api/<file_type>/<filename>')
+def get_heatmap_image(file_type,filename):
+    
+      # Define a mapping of file types to their respective directories
+    file_directories = {
+        "heatmaps": app.config['HEATMAP_FILES'],
+        "matricesFiles": app.config['MATRICES_FILES'],
+        "confusionMatricesFiles": app.config['CONFUSION_MATRICES_FILES'],
+        "finalConfusionMatricesFiles": app.config['FINAL_CONFUSION_MATRICES_FILES'],
+        "datasetFiles": app.config['DATASET_FILES'],
+        "finalMatricesFiles": app.config['FINAL_MATRICES_FILES'],
+    }
+    
+     # Get the directory for the given file type, or return 404 if not found
+    directory = file_directories.get(file_type)
+    if directory:
+        return send_from_directory(directory, filename)
+    else:
+        return jsonify({"error": "Invalid file type"}), 404
+    
+   
 
 # Serve static files
 # Serve static files

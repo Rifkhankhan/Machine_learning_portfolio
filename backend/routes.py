@@ -1,4 +1,7 @@
-# update feilds validation check
+# update route
+# edit model 
+# predict model ,route
+# check view file
 
 
 from app import app, db
@@ -138,23 +141,47 @@ def create_model():
         # Extract form data
         name = request.form.get("name")
         description = request.form.get("description")
+        objectives = request.form.get("objectives")
+        data_cleaning = request.form.get("data_cleaning")
+        cross_validation = request.form.get("cross_validation")
         about_dataset = request.form.get("about_dataset")
         best_algorithm = request.form.get("best_algorithm")
         model_type = request.form.get("model_type")
         source_link = request.form.get("source_link", None)
         features = request.form.get("features")
         algorithm_used = request.form.get("algorithm_used")
+        hyperparameter = request.form.get("hyperparameter")
+        feature_creation = request.form.get("feature_creation")
 
         # Validate required form fields
-        required_fields = ["name", "description", "about_dataset", "best_algorithm", "model_type", "features", "algorithm_used"]
-        if not all(field in request.form and request.form.get(field) for field in required_fields):
-            return jsonify({"error": "Missing required field"}), 400
+        required_fields = [
+                            "name", 
+                           "description", 
+                           "about_dataset", 
+                           "best_algorithm",
+                           "model_type",
+                           "features", 
+                           "algorithm_used",
+                           'cross_validation',
+                           'objectives',
+                           
+                           ]
+        missing_fields = [field for field in required_fields if field not in request.form or not request.form.get(field)]
+
+        if missing_fields:
+            return jsonify({"error": f"Missing required field(s): {', '.join(missing_fields)}"}), 400
         
+
         # Extract file data
         filename = request.files.get('filename') if 'filename' in request.files else None
         heatmap_image = request.files['heatmap_image']  if 'heatmap_image' in request.files else None
         scalerfile = request.files['scalerfile'] if 'scalerfile' in request.files else None
         encodingfile = request.files['encodingfile'] if 'encodingfile' in request.files else None
+        dataset = request.files['dataset'] if 'dataset' in request.files else None
+        matrices = request.files['matrices'] if 'matrices' in request.files else None
+        confusion_matrices = request.files['confusion_matrices'] if 'confusion_matrices' in request.files else None
+        final_matrices = request.files['final_matrices'] if 'final_matrices' in request.files else None
+        final_confusion_matrices = request.files['final_confusion_matrices'] if 'final_confusion_matrices' in request.files else None
 
         # Validate filenames
         if not filename.filename:
@@ -163,6 +190,7 @@ def create_model():
         # File validation rules
         allowed_image_extensions = {'png', 'jpg', 'jpeg'}
         allowed_model_extensions = {'pkl'}
+        allowed_dataset_extensions = {'csv'}
         max_file_size = 10 * 1024 * 1024  # 10 MB limit
 
         def allowed_file(filename, allowed_extensions):
@@ -178,7 +206,13 @@ def create_model():
         # Save files with timestamp in the filename
         def save_file(file, storage_path):
             if file:
-                error = validate_file(file, allowed_model_extensions if file.filename.endswith('.pkl') else allowed_image_extensions)
+                error = validate_file(
+                    file,
+                    allowed_model_extensions if file.filename.endswith('.pkl') 
+                    else allowed_dataset_extensions if file.filename.endswith('.csv')  # Example for dataset extensions
+                    else allowed_image_extensions
+                )
+
                 if error:
                     return jsonify({"error": error}), 400
                 file_path = os.path.join(app.config[storage_path], get_timestamped_filename(file.filename))
@@ -197,6 +231,41 @@ def create_model():
 
         features_list = parse_json_field(features)
         algorithm_used_list = parse_json_field(algorithm_used)
+        data_cleaning_list = parse_json_field(data_cleaning)
+        hyperparameter_list = parse_json_field(hyperparameter)
+        feature_creation_list = parse_json_field(feature_creation)
+     
+    
+        # Check if 'algorithm_used' list is empty
+        if not json.loads(algorithm_used):
+            return jsonify({"error": "At least one algorithm must have been used"}), 400
+        
+      
+        # Validate that each item in the list is a non-empty string
+        for item in json.loads(algorithm_used):
+            if not item.strip():  # Check if the string is empty or contains only whitespace
+                return jsonify({"error": "Each algorithm entry must be a non-empty string"}), 400
+        
+    
+        # Validate JSON fields for 'features' and 'algorithm_used'
+        try:
+            # If the fields are lists, dump them to JSON, otherwise leave them as they are
+            if isinstance(features, list):
+                features = json.dumps(features)
+         
+            if isinstance(hyperparameter, list):
+                hyperparameter = json.dumps(hyperparameter)
+                
+            if isinstance(feature_creation, list):
+                feature_creation = json.dumps(feature_creation)
+                
+            if isinstance(algorithm_used, list):
+                algorithm_used = json.dumps(algorithm_used)
+         
+        except json.JSONDecodeError:
+            return jsonify({"error": "Invalid JSON format for features "}), 400
+
+
 
         # Validate features list
         def validate_features(features_list):
@@ -205,27 +274,73 @@ def create_model():
                     return False
             return True
 
-        if not validate_features(features_list):
-            return jsonify({"error": "Each feature must have non-empty 'name', 'datatype', and 'desc' fields"}), 400
+        def validate_and_clean_features(list,features):
+            validate_list = []
+
+            for feature in list:
+                # Check if all fields ('name', 'datatype', 'desc') are present and non-empty
+                if all(field in feature and feature[field] for field in features):
+                    validate_list.append(feature)  # If valid, keep the feature
+                # If the object is entirely empty (all fields are missing or empty), skip it
+                elif not any(feature[field] for field in features):
+                    continue  # Skip the empty feature
+                else:
+                    # If any field is missing or empty, return error
+                    return False, jsonify({"error": "Each Parameter must have non-empty fields"}), 400
+
+            return True, validate_list
+        
+      
+        
+        isValid ,feature_creation_list = validate_and_clean_features(feature_creation_list,features=['name', 'datatype',"desc"])
+        if not isValid:
+            return jsonify({"error": "Each Feature must have non-empty 'name', 'datatype' fields"}), 400
+        
+        isValid ,features_list = validate_and_clean_features(features_list,features=['name', 'datatype',"desc"])
+        
+        if not isValid:
+            return jsonify({"error": "Each Feature must have non-empty 'name', 'datatype' fields"}), 400
+        
+       
+        isValid ,hyperparameter_list = validate_and_clean_features(hyperparameter_list,features=['name', 'value'])
+       
+        if not isValid:
+            return jsonify({"error": "Each Parameter must have non-empty 'name', 'value' fields"}), 400
+        
         
         # Save files if they exist, otherwise assign None
         new_filename = save_file(filename, 'MODEL_FILES') if filename else None
         new_scalerfile = save_file(scalerfile, 'SCALER_FILES') if scalerfile else None
         new_encodingfile = save_file(encodingfile, 'ENCODING_FILES') if encodingfile else None
         new_heatmap_image = save_file(heatmap_image, 'HEATMAP_FILES') if heatmap_image else None
+        new_matrices = save_file(matrices, 'MATRICES_FILES') if matrices else None
+        new_dataset = save_file(dataset, 'DATASET_FILES') if dataset else None
+        new_confusion_matrices = save_file(confusion_matrices, 'CONFUSION_MATRICES_FILES') if confusion_matrices else None
+        new_final_matrices = save_file(final_matrices, 'FINAL_MATRICES_FILES') if final_matrices else None
+        new_final_confusion_matrices = save_file(final_confusion_matrices, 'FINAL_CONFUSION_MATRICES_FILES') if final_confusion_matrices else None
         
         # Create new model instance
         new_model = Model(
             name=name,
+            objectives=objectives,
             description=description,
             filename=new_filename,
             scalerfile=new_scalerfile,
             encodingfile=new_encodingfile,
             heatmap_image=new_heatmap_image,
+            matrices=new_matrices,
+            final_matrices=new_final_matrices,
+            cross_validation=cross_validation,
+            final_confusion_matrices=new_final_confusion_matrices,
+            dataset=new_dataset,
+            confusion_matrices=new_confusion_matrices,
             about_dataset=about_dataset,
             best_algorithm=best_algorithm,
             features=json.dumps(features_list),
+            hyperparameter=json.dumps(hyperparameter_list),
+            feature_creation=json.dumps(feature_creation_list),
             algorithm_used=json.dumps(algorithm_used_list),
+            data_cleaning=json.dumps(data_cleaning_list),
             model_type=model_type,
             source_link=source_link
         )
@@ -475,6 +590,33 @@ def update_model(id):
         return jsonify({"error": str(e)}), 500
 
 
+def delete_file_if_exists(directory, filename, file_description="File"):
+    """Helper function to delete a file if it exists."""
+    if filename:
+        file_path = os.path.join(directory, filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            print(f"{file_description} deleted: {file_path}")
+        else:
+            print(f"{file_description} not found at {file_path}")
+
+
+def delete_model_files(model):
+    """Deletes related files for a given model, such as the model file, scaler, encoding, and heatmap."""
+    # Extract the file paths from the model
+    model_data = model.to_json()
+    
+    file_info = [
+        (app.config['HEATMAP_FILES'], model_data.get('heatmap_image'), "Heatmap"),
+        (app.config['MODEL_FILES'], model_data.get('filename'), "Model"),
+        (app.config['SCALER_FILES'], model_data.get('scalerfile'), "Scaler"),
+        (app.config['ENCODING_FILES'], model_data.get('encodingfile'), "Encoding")
+    ]
+    
+    # Delete each file if it exists
+    for directory, filename, file_description in file_info:
+        delete_file_if_exists(directory, filename, file_description)
+
 @app.route("/api/models/<int:id>", methods=["DELETE"])
 @require_password
 def delete_model(id):
@@ -484,45 +626,42 @@ def delete_model(id):
         if model is None:
             return jsonify({"error": "Model not found"}), 404
         
-        # Extract the file paths from the model
         model_data = model.to_json()
-        model_filename = model_data.get('filename')
-        scaler_filename = model_data.get('scalerfile')
-        encoding_filename = model_data.get('encodingfile')
-        heatmap = model_data.get('heatmap_image')
+        
+        # Extract the file paths from the model
+        
+        file_info = [
+                (app.config['HEATMAP_FILES'], model_data.get('heatmap_image'), "Heatmap"),
+                (app.config['MODEL_FILES'], model_data.get('filename'), "Model"),
+                (app.config['SCALER_FILES'], model_data.get('scalerfile'), "Scaler"),
+                (app.config['ENCODING_FILES'], model_data.get('encodingfile'), "Encoding"),
+                (app.config['MATRICES_FILES'], model_data.get('matrices'), "matrices"),
+                (app.config['FINAL_MATRICES_FILES'], model_data.get('final_matrices'), "final_matrices"),
+                (app.config['DATASET_FILES'], model_data.get('dataset'), "dataset"),
+                (app.config['CONFUSION_MATRICES_FILES'], model_data.get('confusion_matrices'), "confusion_matrices"),
+                (app.config['FINAL_CONFUSION_MATRICES_FILES'], model_data.get('final_confusion_matrices'), "final_confusion_matrices"),
+            ]
+        
+         # Delete each file if it exists
+        for directory, filename, file_description in file_info:
+            delete_file_if_exists(directory, filename, file_description)
+            
+            
+        # model_filename = model_data.get('filename')
+        # scaler_filename = model_data.get('scalerfile')
+        # encoding_filename = model_data.get('encodingfile')
+        # heatmap = model_data.get('heatmap_image')
         
         # Delete heatmap file if it exists
-        if heatmap:
-            heatmap_file_path = os.path.join(app.config['HEATMAP_FILES'], heatmap)
-            if os.path.exists(heatmap_file_path):
-                os.remove(heatmap_file_path)
-            else:
-                print(f"Model file not found at {heatmap_file_path}")
+        # if heatmap:
+        #     heatmap_file_path = os.path.join(app.config['HEATMAP_FILES'], heatmap)
+        #     if os.path.exists(heatmap_file_path):
+        #         os.remove(heatmap_file_path)
+        #     else:
+        #         print(f"Model file not found at {heatmap_file_path}")
                 
                 
-         # Delete model file if it exists
-        if model_filename:
-            model_file_path = os.path.join(app.config['MODEL_FILES'], model_filename)
-            if os.path.exists(model_file_path):
-                os.remove(model_file_path)
-            else:
-                print(f"Model file not found at {model_file_path}")
-
-        # Delete scaler file if it exists
-        if scaler_filename:
-            scaler_file_path = os.path.join(app.config['SCALER_FILES'], scaler_filename)
-            if os.path.exists(scaler_file_path):
-                os.remove(scaler_file_path)
-            else:
-                print(f"Scaler file not found at {scaler_file_path}")
-
-        # Delete encoding file if it exists
-        if encoding_filename:
-            encoding_file_path = os.path.join(app.config['ENCODING_FILES'], encoding_filename)
-            if os.path.exists(encoding_file_path):
-                os.remove(encoding_file_path)
-            else:
-                print(f"Encoding file not found at {encoding_file_path}")
+        
 
         db.session.delete(model)
         db.session.commit()
