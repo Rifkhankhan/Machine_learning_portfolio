@@ -188,33 +188,29 @@ const View = () => {
           <Heading as="h1" size="xl" textAlign="center">
             {model?.name}
           </Heading>
+          <Box>
+            <Heading as="h2" size="lg" mb={4}>
+              Model Overview
+            </Heading>
+            <Text fontSize="md">
+              {model?.description || "No description available"}
+            </Text>
+          </Box>
+
+          <Box>
+            <Heading as="h2" size="lg" mb={4}>
+              Model Objectives
+            </Heading>
+            <Text fontSize="md">
+              {model?.objectives || "No description available"}
+            </Text>
+          </Box>
 
           <Box>
             <Heading as="h2" size="lg" mb={4}>
               About Dataset
             </Heading>
             <Text fontSize="md">{model?.about_dataset}</Text>
-          </Box>
-
-          <Box>
-            <Heading as="h2" size="lg" mb={4}>
-              Algorithm Details
-            </Heading>
-            <Text fontSize="md">
-              <strong>Algorithm Used:</strong>{" "}
-              {model?.algorithm_used?.join(", ") || "N/A"}
-              <br />
-              <strong>Best Algorithm:</strong> {model?.best_algorithm || "N/A"}
-            </Text>
-          </Box>
-
-          <Box>
-            <Heading as="h2" size="lg" mb={4}>
-              Model Description
-            </Heading>
-            <Text fontSize="md">
-              {model?.description || "No description available"}
-            </Text>
           </Box>
 
           <Box>
@@ -228,6 +224,27 @@ const View = () => {
                 </ListItem>
               ))}
             </List>
+          </Box>
+
+          <Box>
+            <Heading as="h2" size="lg" mb={4}>
+              Dataset
+            </Heading>
+            <Text fontSize="md">{model?.dataset}</Text>
+          </Box>
+
+          <Box>
+            <Heading as="h2" size="lg" mb={4}>
+              Data Cleaning Process
+            </Heading>
+            <Text fontSize="md">{model?.data_cleaning}</Text>
+          </Box>
+
+          <Box>
+            <Heading as="h2" size="lg" mb={4}>
+              Feature Creation
+            </Heading>
+            <Text fontSize="md">{model?.data_cleaning}</Text>
           </Box>
 
           {model?.heatmap_image && (
@@ -245,6 +262,18 @@ const View = () => {
               />
             </Box>
           )}
+
+          <Box>
+            <Heading as="h2" size="lg" mb={4}>
+              Algorithm Details
+            </Heading>
+            <Text fontSize="md">
+              <strong>Algorithm Used:</strong>{" "}
+              {model?.algorithm_used?.join(", ") || "N/A"}
+              <br />
+              <strong>Best Algorithm:</strong> {model?.best_algorithm || "N/A"}
+            </Text>
+          </Box>
 
           <Box>
             <Heading as="h2" size="lg" mb={4}>

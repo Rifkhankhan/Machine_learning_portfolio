@@ -35,6 +35,17 @@ class Model(db.Model):
   name = db.Column(db.String(100), nullable=False)
   filename = db.Column(db.String(255), nullable=False)  # Increased length
   scalerfile = db.Column(db.String(255), nullable=True)
+  objectives = db.Column(db.String(255), nullable=True)
+  dataset = db.Column(db.String(255), nullable=True)
+  data_cleaning = db.Column(db.Text, nullable=True)
+  feature_creation = db.Column(db.Text, nullable=True)
+  hyperparameter = db.Column(db.Text, nullable=True)
+  cross_validation = db.Column(db.Float(precision=3), nullable=True)
+  matrices = db.Column(db.Text, nullable=True)
+  model_comparision = db.Column(db.Text, nullable=True)
+  confusion_matrices = db.Column(db.Text, nullable=True)
+  final_matrices = db.Column(db.Text, nullable=True)
+  final_confusion_matrices = db.Column(db.Text, nullable=True)
   encodingfile = db.Column(db.String(255), nullable=True)
   about_dataset = db.Column(db.Text, nullable=False)
   features = db.Column(db.Text, nullable=False)  # Store JSON as string
