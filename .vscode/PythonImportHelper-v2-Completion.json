@@ -863,7 +863,7 @@
         "kind": 5,
         "importPath": "backend.app",
         "description": "backend.app",
-        "peekOfCode": "app = Flask(__name__)\n# Configure CORS\nCORS(app, resources={r\"/api/*\": {\"origins\": \"*\"}})\n# Configure the database (update URI for production as needed)\napp.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///models.db')\napp.config[\"SQLALCHEMY_TRACK_MODIFICATIONS\"] = False\napp.config['MODEL_FILES'] = 'modelFiles'\napp.config['SCALER_FILES'] = 'scalerFiles'\napp.config['ENCODING_FILES'] = 'encodingFiles'\napp.config['HEATMAP_FILES'] = 'heatmaps'",
+        "peekOfCode": "app = Flask(__name__)\n# Configure CORS\n# CORS(app, resources={r\"/api/*\": {\"origins\": \"*\"}})\n# Configure the database (update URI for production as needed)\napp.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///models.db')\napp.config[\"SQLALCHEMY_TRACK_MODIFICATIONS\"] = False\napp.config['MODEL_FILES'] = 'modelFiles'\napp.config['SCALER_FILES'] = 'scalerFiles'\napp.config['ENCODING_FILES'] = 'encodingFiles'\napp.config['HEATMAP_FILES'] = 'heatmaps'",
         "detail": "backend.app",
         "documentation": {}
     },
