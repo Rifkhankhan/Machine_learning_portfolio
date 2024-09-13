@@ -26,8 +26,10 @@ import {
   Checkbox,
   useDisclosure,
   CardFooter,
+  CheckboxGroup,
 } from "@chakra-ui/react";
 import { AddIcon, MinusIcon } from "@chakra-ui/icons";
+import Papa from "papaparse";
 
 import { BiTrash, BiEdit } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
@@ -38,6 +40,8 @@ const UserCard = ({ model, setModels }) => {
   const toast = useToast();
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [datasetFeatures, setDatasetFeatures] = useState();
+
   const {
     isOpen: passwordisOpen,
     onOpen: passwordonOpen,
@@ -52,6 +56,17 @@ const UserCard = ({ model, setModels }) => {
     id: model?.id,
     name: model?.name,
     description: model?.description,
+    objectives: model?.objectives,
+    dataset: model?.dataset,
+    data_cleaning: model?.data_cleaning,
+    feature_creation: model?.feature_creation,
+    cross_validation: model?.cross_validation,
+    hyperparameter: model?.hyperparameter,
+    matrices: model?.matrices,
+    confusion_matrices: model?.confusion_matrices,
+    final_confusion_matrices: model?.final_confusion_matrices,
+    final_matrices: model?.final_matrices,
+    result: model?.result,
     filename: model?.filename,
     encodingfile: model?.encodingfile,
     scalerfile: model?.scalerfile,
@@ -65,9 +80,67 @@ const UserCard = ({ model, setModels }) => {
     password: "",
   }); // State to hold the edited model
 
+  useEffect(() => {
+    // console.log(model);
+  }, []);
+
+  // Analyze each column and determine data type, description, and set calculate to false
+  const analyzeColumns = (headings, rows) => {
+    return headings.map((heading, colIndex) => {
+      const colData = rows.map((row) => row[colIndex]); // Get data for each column
+      const datatype = detectDataType(colData); // Detect data type (int, float, string)
+      const desc = generateDescription(colData, datatype); // Generate description based on data type
+
+      return {
+        name: heading,
+        datatype,
+        desc,
+        calculate: false, // Default value for calculate
+      };
+    });
+  };
+
+  // Detect the data type for a column (int, float, or string)
+  const detectDataType = (colData) => {
+    let isInt = true;
+    let isFloat = true;
+
+    for (const value of colData) {
+      if (!isNaN(value)) {
+        if (value.includes(".")) {
+          isInt = false;
+        }
+      } else {
+        isInt = false;
+        isFloat = false;
+        break;
+      }
+    }
+
+    if (isInt) return "int";
+    if (isFloat) return "float";
+    return "string";
+  };
+
+  // Generate description based on data type
+  const generateDescription = (colData, dataType) => {
+    if (dataType === "int" || dataType === "float") {
+      return `Contains numerical data`;
+    } else if (dataType === "string") {
+      const uniqueValues = [...new Set(colData)];
+      if (uniqueValues.length <= 10) {
+        return `Categorical data with values: ${uniqueValues.join(", ")}`;
+      } else {
+        return `Contains string data`;
+      }
+    }
+  };
   // Handle input changes in the modal
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    if (name === "result") {
+      value = editedModel.features[value];
+    }
     setEditedModel((prevModel) => ({
       ...prevModel,
       [name]: value,
@@ -114,11 +187,44 @@ const UserCard = ({ model, setModels }) => {
 
   const handleFileChange = (e) => {
     const { name, files } = e.target;
+
+    const file = e.target.files[0];
+
+    if (name === "dataset") {
+      editedModel.result = [];
+    }
+
     if (files && files[0]) {
+      // Update the file in newModel state
       setEditedModel((prevState) => ({
         ...prevState,
         [name]: files[0],
       }));
+
+      // Check if the file is a CSV and then parse it
+      if (file.type === "text/csv") {
+        const reader = new FileReader();
+
+        reader.onload = (event) => {
+          Papa.parse(event.target.result, {
+            complete: (result) => {
+              const data = result.data;
+              const csvHeadings = data[0]; // First row (headings)
+              const allrows = data.slice(1); // Next 5 rows for analysis
+              const features = analyzeColumns(csvHeadings, allrows);
+              setDatasetFeatures(features);
+              // Update the state with CSV headings and column analysis
+              setEditedModel((prevModel) => ({
+                ...prevModel,
+                features, // Data type and description for each column in the desired format
+              }));
+            },
+            header: false,
+          });
+        };
+
+        reader.readAsText(file);
+      }
     }
   };
 
@@ -145,10 +251,26 @@ const UserCard = ({ model, setModels }) => {
 
       // Manually serialize complex data (e.g., arrays/objects to JSON)
       const serializedModel = { ...editedModel };
+      console.log(serializedModel);
+
       serializedModel.features = JSON.stringify(editedModel.features); // Convert features to JSON string
+
       serializedModel.algorithm_used = JSON.stringify(
         editedModel.algorithm_used
-      ); // Convert algorithm_used to JSON string
+      );
+
+      serializedModel.hyperparameter = JSON.stringify(
+        editedModel.hyperparameter
+      );
+
+      serializedModel.feature_creation = JSON.stringify(
+        editedModel.feature_creation
+      );
+
+      serializedModel.data_cleaning = JSON.stringify(editedModel.data_cleaning);
+      serializedModel.result = JSON.stringify(editedModel.result);
+
+      console.log(serializedModel);
 
       // Append serialized data to formData
       Object.keys(serializedModel).forEach((key) => {
@@ -240,6 +362,38 @@ const UserCard = ({ model, setModels }) => {
       i === index ? e.target.value : item
     );
     setEditedModel({ ...editedModel, [field]: updatedArray });
+  };
+
+  // for hyperparameter
+
+  const handleParameterChange = (index, e, field) => {
+    const updatedFeatures = [...editedModel.hyperparameter];
+    updatedFeatures[index][field] = e.target.value;
+
+    setEditedModel({ ...editedModel, hyperparameter: updatedFeatures });
+  };
+
+  const handleRemoveParameter = (index) => {
+    const updatedFeatures = [...editedModel.hyperparameter];
+    updatedFeatures.splice(index, 1);
+    setEditedModel({ ...editedModel, hyperparameter: updatedFeatures });
+  };
+
+  const handleAddParameter = () => {
+    setEditedModel({
+      ...editedModel,
+      hyperparameter: [...editedModel.hyperparameter, { name: "", value: "" }],
+    });
+  };
+
+  // data cleaning
+  // Handle checkbox changes
+  const handleCheckboxChange = (values) => {
+    // Update the model state with the selected values
+    setEditedModel((prevModel) => ({
+      ...prevModel,
+      data_cleaning: values,
+    }));
   };
 
   return (
@@ -341,12 +495,22 @@ const UserCard = ({ model, setModels }) => {
               </FormControl>
 
               <FormControl>
-                <FormLabel>Description</FormLabel>
+                <FormLabel>Overview</FormLabel>
                 <Textarea
                   name="description"
                   value={editedModel.description}
                   onChange={handleInputChange}
-                  placeholder="Enter a brief description"
+                  placeholder="Enter a brief Overview"
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Objective</FormLabel>
+                <Textarea
+                  name="objectives"
+                  value={editedModel.objectives}
+                  onChange={handleInputChange}
+                  placeholder="Enter the  datasetFiles"
                 />
               </FormControl>
 
@@ -358,6 +522,53 @@ const UserCard = ({ model, setModels }) => {
                   onChange={handleInputChange}
                   placeholder="Enter information about the dataset"
                 />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Dateset File(.csv)</FormLabel>
+                <Input
+                  type="file"
+                  name="dataset"
+                  onChange={handleFileChange}
+                  accept=".csv"
+                />
+                {/* Check if there is an existing file in editedModel.filename */}
+                {editedModel.dataset &&
+                typeof editedModel.dataset === "object" ? (
+                  // If the user selects a new file, display the new file name
+                  <Text mt={2}>Selected file: {editedModel.dataset.name}</Text>
+                ) : editedModel.dataset &&
+                  typeof editedModel.dataset === "string" ? (
+                  // If there is an existing file name (from previously uploaded data), show that
+                  <Text mt={2}>Existing file: {editedModel.dataset}</Text>
+                ) : (
+                  // If no file has been uploaded yet
+                  <Text mt={2}>No file chosen</Text>
+                )}
+              </FormControl>
+
+              <FormControl as="fieldset">
+                <FormLabel as="legend">Data Cleaning Operations</FormLabel>
+                <CheckboxGroup
+                  value={editedModel.data_cleaning}
+                  onChange={handleCheckboxChange}
+                >
+                  <Stack spacing={2} direction="column">
+                    <Checkbox value="remove_duplicates">
+                      Remove Duplicates
+                    </Checkbox>
+                    <Checkbox value="handle_missing_values">
+                      Handle Missing Values
+                    </Checkbox>
+                    <Checkbox value="normalize">Normalize</Checkbox>
+                    <Checkbox value="standardize">Standardize</Checkbox>
+                    <Checkbox value="encode_categorical">
+                      Encode Categorical Variables
+                    </Checkbox>
+                    <Checkbox value="outlier_removal">Outlier Removal</Checkbox>
+                    <Checkbox value="scale_features">Scale Features</Checkbox>
+                  </Stack>
+                </CheckboxGroup>
               </FormControl>
 
               <FormControl>
@@ -442,7 +653,7 @@ const UserCard = ({ model, setModels }) => {
               </FormControl>
 
               <FormControl>
-                <FormLabel>Heatmap Image</FormLabel>
+                <FormLabel>Visual Image</FormLabel>
                 <Input
                   type="file"
                   name="heatmap_image"
@@ -559,6 +770,177 @@ const UserCard = ({ model, setModels }) => {
                     Natural Language Processing
                   </option>
                 </Select>
+              </FormControl>
+
+              {editedModel?.model_type.toLowerCase() === "classification" && (
+                <FormControl>
+                  <FormLabel>Final Result</FormLabel>
+                  <Select
+                    name="result"
+                    value={editedModel?.features.findIndex(
+                      (algo) => algo.name === editedModel.result.name
+                    )}
+                    onChange={handleInputChange}
+                    disabled={datasetFeatures?.length === 0}
+                  >
+                    <option value="" disabled>
+                      Select the result feature
+                    </option>
+                    {editedModel?.features?.map((algo, index) => (
+                      <option key={index} value={index}>
+                        {algo.name} - {algo.desc}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+              <FormControl>
+                <FormLabel>Cross Validation</FormLabel>
+
+                <Input
+                  name="cross_validation"
+                  value={editedModel.cross_validation}
+                  onChange={handleInputChange}
+                  placeholder="Enter information about the dataset"
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Matrices</FormLabel>
+                <Input
+                  type="file"
+                  name="matrices"
+                  onChange={handleFileChange}
+                  accept=".png,.jpg,.jpeg"
+                />
+                {/* Check if there is an existing file in editedModel.filename */}
+                {editedModel.matrices &&
+                typeof editedModel.matrices === "object" ? (
+                  // If the user selects a new file, display the new file name
+                  <Text mt={2}>Selected file: {editedModel.matrices.name}</Text>
+                ) : editedModel.matrices &&
+                  typeof editedModel.matrices === "string" ? (
+                  // If there is an existing file name (from previously uploaded data), show that
+                  <Text mt={2}>Existing file: {editedModel.matrices}</Text>
+                ) : (
+                  // If no file has been uploaded yet
+                  <Text mt={2}>No file chosen</Text>
+                )}
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Confusion matrices</FormLabel>
+                <Input
+                  type="file"
+                  name="confusion_matrices"
+                  onChange={handleFileChange}
+                  accept=".png,.jpg,.jpeg"
+                />
+                {/* Check if there is an existing file in editedModel.filename */}
+                {editedModel.confusion_matrices &&
+                typeof editedModel.confusion_matrices === "object" ? (
+                  // If the user selects a new file, display the new file name
+                  <Text mt={2}>
+                    Selected file: {editedModel.confusion_matrices.name}
+                  </Text>
+                ) : editedModel.confusion_matrices &&
+                  typeof editedModel.confusion_matrices === "string" ? (
+                  // If there is an existing file name (from previously uploaded data), show that
+                  <Text mt={2}>
+                    Existing file: {editedModel.confusion_matrices}
+                  </Text>
+                ) : (
+                  // If no file has been uploaded yet
+                  <Text mt={2}>No file chosen</Text>
+                )}
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Hyperparameter</FormLabel>
+                {editedModel.hyperparameter.map((feature, index) => (
+                  <Stack key={index} direction="row" align="center" mb={2}>
+                    <Input
+                      placeholder="Parameter Name"
+                      value={feature.name}
+                      onChange={(e) => handleParameterChange(index, e, "name")}
+                    />
+                    <Input
+                      placeholder="Value"
+                      value={feature.value}
+                      onChange={(e) => handleParameterChange(index, e, "value")}
+                    />
+
+                    <IconButton
+                      icon={<MinusIcon />}
+                      colorScheme="red"
+                      onClick={() => handleRemoveParameter(index)}
+                      disabled={editedModel.hyperparameter.length === 1}
+                    />
+                    {index === editedModel.hyperparameter.length - 1 && (
+                      <IconButton
+                        icon={<AddIcon />}
+                        colorScheme="teal"
+                        onClick={handleAddParameter}
+                      />
+                    )}
+                  </Stack>
+                ))}
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>
+                  Confusion Matrices After using Hyperparameter
+                </FormLabel>
+                <Input
+                  type="file"
+                  name="final_confusion_matrices"
+                  onChange={handleFileChange}
+                  accept=".png,.jpg,.jpeg"
+                />
+                {/* Check if there is an existing file in editedModel.filename */}
+                {editedModel.final_confusion_matrices &&
+                typeof editedModel.final_confusion_matrices === "object" ? (
+                  // If the user selects a new file, display the new file name
+                  <Text mt={2}>
+                    Selected file: {editedModel.final_confusion_matrices.name}
+                  </Text>
+                ) : editedModel.final_confusion_matrices &&
+                  typeof editedModel.final_confusion_matrices === "string" ? (
+                  // If there is an existing file name (from previously uploaded data), show that
+                  <Text mt={2}>
+                    Existing file: {editedModel.final_confusion_matrices}
+                  </Text>
+                ) : (
+                  // If no file has been uploaded yet
+                  <Text mt={2}>No file chosen</Text>
+                )}
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Matrices After using Hyperparameter</FormLabel>
+                <Input
+                  type="file"
+                  name="final_matrices"
+                  onChange={handleFileChange}
+                  accept=".png,.jpg,.jpeg"
+                />
+                {/* Check if there is an existing file in editedModel.filename */}
+                {editedModel.final_matrices &&
+                typeof editedModel.final_matrices === "object" ? (
+                  // If the user selects a new file, display the new file name
+                  <Text mt={2}>
+                    Selected file: {editedModel.final_matrices.name}
+                  </Text>
+                ) : editedModel.final_matrices &&
+                  typeof editedModel.final_matrices === "string" ? (
+                  // If there is an existing file name (from previously uploaded data), show that
+                  <Text mt={2}>
+                    Existing file: {editedModel.final_matrices}
+                  </Text>
+                ) : (
+                  // If no file has been uploaded yet
+                  <Text mt={2}>No file chosen</Text>
+                )}
               </FormControl>
 
               <FormControl>

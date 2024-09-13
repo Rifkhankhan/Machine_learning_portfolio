@@ -35,23 +35,28 @@ class Model(db.Model):
   name = db.Column(db.String(100), nullable=False)
   filename = db.Column(db.String(255), nullable=False)  # Increased length
   scalerfile = db.Column(db.String(255), nullable=True)
+  
   objectives = db.Column(db.String(255), nullable=True)
-  dataset = db.Column(db.String(255), nullable=True)
-  data_cleaning = db.Column(db.Text, nullable=True)
-  feature_creation = db.Column(db.Text, nullable=True)
-  hyperparameter = db.Column(db.Text, nullable=True)
   cross_validation = db.Column(db.Float(precision=3), nullable=True)
+  
+  data_cleaning = db.Column(db.Text, nullable=True)
+  
+  hyperparameter = db.Column(db.Text, nullable=True)
+  feature_creation = db.Column(db.Text, nullable=True)
+  result = db.Column(db.Text, nullable=True)  # Store JSON as string
+  
   matrices = db.Column(db.Text, nullable=True)
+  dataset = db.Column(db.String(255), nullable=True)
   confusion_matrices = db.Column(db.Text, nullable=True)
   final_matrices = db.Column(db.Text, nullable=True)
   final_confusion_matrices = db.Column(db.Text, nullable=True)
   encodingfile = db.Column(db.String(255), nullable=True)
+  
   about_dataset = db.Column(db.Text, nullable=False)
   features = db.Column(db.Text, nullable=False)  # Store JSON as string
   description = db.Column(db.Text, nullable=False)
   heatmap_image = db.Column(db.String(200), nullable=True)
   algorithm_used = db.Column(db.Text, nullable=False)  # Store JSON as string
-  result = db.Column(db.Text, nullable=True)  # Store JSON as string
   best_algorithm = db.Column(db.String(100), nullable=True)
   model_type = db.Column(db.Text, nullable=False)
   source_link = db.Column(db.String(200), nullable=True)
@@ -63,24 +68,29 @@ class Model(db.Model):
       
       return {
           "id": self.id,
-          "name": self.name,
-          "description": self.description,
-          "filename": self.filename,
-          "scalerfile": self.scalerfile,
-          "matrices": self.matrices,
-          "final_matrices": self.final_matrices,
-          "cross_validation": self.cross_validation,
+          "name": self.name ,
+          "description": self.description if self.description  else  "",
+          "objectives": self.objectives if self.objectives  else  "",
+          "filename": self.filename if self.filename else None,
+          "scalerfile": self.scalerfile if self.scalerfile else None,
+          "matrices": self.matrices if self.matrices else None,
+          "final_matrices": self.final_matrices if self.final_matrices else None,
+          "cross_validation": self.cross_validation if self.cross_validation  else  "",
+          "hyperparameter":  json.loads(self.hyperparameter) if self.hyperparameter else [],
           "confusion_matrices": self.confusion_matrices,
           "final_confusion_matrices": self.final_confusion_matrices,
-          "encodingfile": self.encodingfile,
-          "heatmap_image": self.heatmap_image,
-          "about_dataset": self.about_dataset,
-          "dataset": self.dataset,
-          "best_algorithm": self.best_algorithm,
-          "features": json.loads(self.features),
-          "algorithm_used": json.loads(self.algorithm_used),
-          "model_type": self.model_type,
-          "source_link": self.source_link
+          "encodingfile": self.encodingfile if self.encodingfile else None,
+          "heatmap_image": self.heatmap_image if self.heatmap_image else None,
+          "about_dataset": self.about_dataset if self.about_dataset  else  "",
+          "dataset": self.dataset if self.dataset else None,
+          "best_algorithm": self.best_algorithm if self.best_algorithm  else  "",
+          "features": json.loads(self.features) if self.features else [],
+          "result": json.loads(self.result) if self.result else [],
+          "feature_creation": json.loads(self.feature_creation) if self.feature_creation  else [],
+          "data_cleaning": json.loads(self.data_cleaning) if self.data_cleaning else [],
+          "algorithm_used": json.loads(self.algorithm_used) if self.algorithm_used else [],
+          "model_type": self.model_type if self.model_type  else  "",
+          "source_link": self.source_link if self.source_link  else  ""
       }
 
 

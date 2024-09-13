@@ -44,7 +44,7 @@ function Home() {
     name: "",
     description: "",
     objectives: "",
-    dataset: "",
+    dataset: null,
     filename: null,
     data_cleaning: [],
     feature_creation: [{ name: "", datatype: "", desc: "", calculate: false }],
@@ -67,7 +67,6 @@ function Home() {
     password: "",
   });
   const toast = useToast();
-  console.log(newModel);
 
   // Handle changes to the feature input fields
   const handleFeatureChange = (index, e, field) => {
@@ -110,7 +109,7 @@ function Home() {
         if (response.ok) {
           const result = await response.json();
 
-          console.log(result);
+          console.log(result.models);
 
           setModels([...result.models]);
 
@@ -126,8 +125,6 @@ function Home() {
     getModels();
   }, [setCurrentPage, currentPage]);
 
-  useEffect(() => {}, [models]);
-
   const handleInputChange = (e) => {
     let { name, value } = e.target;
     if (name === "result") {
@@ -139,6 +136,7 @@ function Home() {
   const handleFileChange = (e) => {
     const { name } = e.target;
     const file = e.target.files[0];
+    console.log(file);
 
     if (file) {
       // Update the file in newModel state
@@ -252,7 +250,7 @@ function Home() {
         newModel.final_confusion_matrices
       );
       formData.append("scalerfile", newModel.scalerfile);
-      formData.append("result", newModel.result);
+      formData.append("result", JSON.stringify(newModel.result));
       formData.append("encodingfile", newModel.encodingfile);
       formData.append("dataset", newModel.dataset);
       formData.append("heatmap_image", newModel.heatmap_image);
@@ -267,6 +265,7 @@ function Home() {
         "hyperparameter",
         JSON.stringify(newModel.hyperparameter)
       );
+      formData.append("data_cleaning", JSON.stringify(newModel.data_cleaning));
       formData.append(
         "feature_creation",
         JSON.stringify(newModel.feature_creation)

@@ -1,4 +1,4 @@
-# update route
+
 # edit model 
 # predict model ,route
 # check view file
@@ -15,6 +15,7 @@ import joblib
 import sklearn
 import json
 from models import Feature
+
 
 from functools import wraps
 
@@ -137,12 +138,17 @@ def create_model():
         # Check if files are present
         if 'filename' not in request.files:
             return jsonify({"error": "Missing required file(s)"}), 400
+          # Extract form data and files
+        data = request.form
+      
         
+        files = request.files
         # Extract form data
         name = request.form.get("name")
         description = request.form.get("description")
         objectives = request.form.get("objectives")
         data_cleaning = request.form.get("data_cleaning")
+        result = request.form.get("result")
         cross_validation = request.form.get("cross_validation")
         about_dataset = request.form.get("about_dataset")
         best_algorithm = request.form.get("best_algorithm")
@@ -172,6 +178,130 @@ def create_model():
             return jsonify({"error": f"Missing required field(s): {', '.join(missing_fields)}"}), 400
         
 
+        # For example, if "features" is required but exists as an empty list, it should still be considered missing
+        empty_fields = [
+            field for field in required_fields
+            if field in data and not data[field]  # Check in data if field exists but is empty
+            
+        ]
+       
+ # Combine missing and empty fields
+        invalid_fields = missing_fields + empty_fields
+      
+          # If there are any invalid fields, you can return an error
+        if invalid_fields:
+            raise ValueError(f"Missing or empty required fields: {', '.join(invalid_fields)}")
+        
+        # Validate and parse JSON fields
+        def parse_json_field(field_value):
+            try:
+                return json.loads(field_value) if field_value else []
+            except json.JSONDecodeError:
+                raise ValueError("Invalid JSON format")
+
+        features_list = parse_json_field(features)
+        algorithm_used_list = parse_json_field(algorithm_used)
+        data_cleaning_list = parse_json_field(data_cleaning)
+        hyperparameter_list = parse_json_field(hyperparameter)
+        feature_creation_list = parse_json_field(feature_creation)
+        result_list = parse_json_field(result)
+     
+    
+        # Check if 'algorithm_used' list is empty
+        if not json.loads(algorithm_used):
+            return jsonify({"error": "At least one algorithm must have been used"}), 400
+        
+      
+        # Validate that each item in the list is a non-empty string
+        for item in json.loads(algorithm_used):
+            if not item.strip():  # Check if the string is empty or contains only whitespace
+                return jsonify({"error": "Each algorithm entry must be a non-empty string"}), 400
+        
+    
+        # Validate JSON fields for 'features' and 'algorithm_used'
+        try:
+            # If the fields are lists, dump them to JSON, otherwise leave them as they are
+            if isinstance(features, list):
+                features = json.dumps(features)
+         
+            if isinstance(hyperparameter, list):
+                hyperparameter = json.dumps(hyperparameter)
+                
+            if isinstance(feature_creation, list):
+                feature_creation = json.dumps(feature_creation)
+                
+            if isinstance(algorithm_used, list):
+                algorithm_used = json.dumps(algorithm_used)
+                
+            if isinstance(result, dict):
+                result = json.dumps(result)
+                
+        except json.JSONDecodeError:
+            return jsonify({"error": "Invalid JSON format for features "}), 400
+
+
+
+        # Validate features list
+        def validate_features(features_list):
+            for feature in features_list:
+                if not all(field in feature and feature[field] for field in ['name', 'datatype', 'desc']):
+                    return False
+            return True
+
+        def validate_and_clean_features(list,features):
+            validate_list = []
+
+            for feature in list:
+                # Check if all fields ('name', 'datatype', 'desc') are present and non-empty
+                if all(field in feature and feature[field] for field in features):
+                    validate_list.append(feature)  # If valid, keep the feature
+                # If the object is entirely empty (all fields are missing or empty), skip it
+                elif not any(feature[field] for field in features):
+                    continue  # Skip the empty feature
+                else:
+                    # If any field is missing or empty, return error
+                    return False, jsonify({"error": "Each Parameter must have non-empty fields"}), 400
+
+            return True, validate_list
+        
+        def validate_and_clean_result_features(dict_data):
+                # Validate result features
+                if not isinstance(dict_data, dict):
+                    return False, {"error": "Invalid input format, expected a dictionary"}
+                if all(value not in [None, ''] for value in dict_data.values()):
+                    return True, dict_data
+                else:
+                    return False, {"error": "All fields in the dictionary must be non-empty"}
+
+           
+        
+        isValid ,feature_creation_list = validate_and_clean_features(feature_creation_list,features=['name', 'datatype',"desc"])
+        if not isValid:
+            return jsonify({"error": "Each Feature must have non-empty 'name', 'datatype' fields"}), 400
+        
+        isValid ,features_list = validate_and_clean_features(features_list,features=['name', 'datatype',"desc"])
+        
+        if not isValid:
+            return jsonify({"error": "Each Feature must have non-empty 'name', 'datatype' fields"}), 400
+        
+       
+        isValid ,hyperparameter_list = validate_and_clean_features(hyperparameter_list,features=['name', 'value'])
+       
+        if not isValid:
+            return jsonify({"error": "Each Parameter must have non-empty 'name', 'value' fields"}), 400
+       
+        isValid ,result_valid = validate_and_clean_result_features(result_list)
+        
+     
+        if isValid : 
+            result_list = result_valid 
+         
+        if not isValid:
+            print(result_valid)
+            return jsonify({"error": "Each Feature must have non-empty 'name', 'datatype','desc' fields"}), 400
+       
+       
+        
         # Extract file data
         filename = request.files.get('filename') if 'filename' in request.files else None
         heatmap_image = request.files['heatmap_image']  if 'heatmap_image' in request.files else None
@@ -220,93 +350,6 @@ def create_model():
                 return get_timestamped_filename(file.filename)
             return None
 
-       
-
-        # Validate and parse JSON fields
-        def parse_json_field(field_value):
-            try:
-                return json.loads(field_value) if field_value else []
-            except json.JSONDecodeError:
-                raise ValueError("Invalid JSON format")
-
-        features_list = parse_json_field(features)
-        algorithm_used_list = parse_json_field(algorithm_used)
-        data_cleaning_list = parse_json_field(data_cleaning)
-        hyperparameter_list = parse_json_field(hyperparameter)
-        feature_creation_list = parse_json_field(feature_creation)
-     
-    
-        # Check if 'algorithm_used' list is empty
-        if not json.loads(algorithm_used):
-            return jsonify({"error": "At least one algorithm must have been used"}), 400
-        
-      
-        # Validate that each item in the list is a non-empty string
-        for item in json.loads(algorithm_used):
-            if not item.strip():  # Check if the string is empty or contains only whitespace
-                return jsonify({"error": "Each algorithm entry must be a non-empty string"}), 400
-        
-    
-        # Validate JSON fields for 'features' and 'algorithm_used'
-        try:
-            # If the fields are lists, dump them to JSON, otherwise leave them as they are
-            if isinstance(features, list):
-                features = json.dumps(features)
-         
-            if isinstance(hyperparameter, list):
-                hyperparameter = json.dumps(hyperparameter)
-                
-            if isinstance(feature_creation, list):
-                feature_creation = json.dumps(feature_creation)
-                
-            if isinstance(algorithm_used, list):
-                algorithm_used = json.dumps(algorithm_used)
-         
-        except json.JSONDecodeError:
-            return jsonify({"error": "Invalid JSON format for features "}), 400
-
-
-
-        # Validate features list
-        def validate_features(features_list):
-            for feature in features_list:
-                if not all(field in feature and feature[field] for field in ['name', 'datatype', 'desc']):
-                    return False
-            return True
-
-        def validate_and_clean_features(list,features):
-            validate_list = []
-
-            for feature in list:
-                # Check if all fields ('name', 'datatype', 'desc') are present and non-empty
-                if all(field in feature and feature[field] for field in features):
-                    validate_list.append(feature)  # If valid, keep the feature
-                # If the object is entirely empty (all fields are missing or empty), skip it
-                elif not any(feature[field] for field in features):
-                    continue  # Skip the empty feature
-                else:
-                    # If any field is missing or empty, return error
-                    return False, jsonify({"error": "Each Parameter must have non-empty fields"}), 400
-
-            return True, validate_list
-        
-      
-        
-        isValid ,feature_creation_list = validate_and_clean_features(feature_creation_list,features=['name', 'datatype',"desc"])
-        if not isValid:
-            return jsonify({"error": "Each Feature must have non-empty 'name', 'datatype' fields"}), 400
-        
-        isValid ,features_list = validate_and_clean_features(features_list,features=['name', 'datatype',"desc"])
-        
-        if not isValid:
-            return jsonify({"error": "Each Feature must have non-empty 'name', 'datatype' fields"}), 400
-        
-       
-        isValid ,hyperparameter_list = validate_and_clean_features(hyperparameter_list,features=['name', 'value'])
-       
-        if not isValid:
-            return jsonify({"error": "Each Parameter must have non-empty 'name', 'value' fields"}), 400
-        
         
         # Save files if they exist, otherwise assign None
         new_filename = save_file(filename, 'MODEL_FILES') if filename else None
@@ -326,6 +369,7 @@ def create_model():
             description=description,
             filename=new_filename,
             scalerfile=new_scalerfile,
+            result=json.dumps(result_list),
             encodingfile=new_encodingfile,
             heatmap_image=new_heatmap_image,
             matrices=new_matrices,
@@ -344,9 +388,11 @@ def create_model():
             model_type=model_type,
             source_link=source_link
         )
+        
 
         db.session.add(new_model)
         db.session.commit()
+        print(new_model)
 
         return jsonify(new_model.to_json()), 201
 
@@ -373,7 +419,7 @@ def get_models():
   
         # Convert the models to a list of dictionaries
         result = [model.to_json() for model in models]
-    
+ 
         
         # Create a pagination response
         response = {
@@ -416,19 +462,30 @@ def update_model(id):
         
          # Extract form data and files
         data = request.form
-      
+        
+        
+
         
         files = request.files
         
-         # Validation for required fields
-        required_fields = ["name", "description", "about_dataset", "best_algorithm", "model_type", "features", "algorithm_used"]
-     
+         # Validate required form fields
+        required_fields = [
+                            "name", 
+                           "description", 
+                           "about_dataset", 
+                           "best_algorithm",
+                           "model_type",
+                           "features", 
+                           "algorithm_used",
+                           "data_cleaning",
+                           'cross_validation',
+                           'objectives',
+                           
+                           ]
         
         # Check if required fields are either missing or empty
-        missing_fields = [
-            field for field in required_fields
-            if not data.get(field) and not model.__dict__.get(field)
-        ]
+        missing_fields = [field for field in required_fields if field not in request.form or not request.form.get(field)]
+
 
         # For example, if "features" is required but exists as an empty list, it should still be considered missing
         empty_fields = [
@@ -448,6 +505,9 @@ def update_model(id):
         
         # Update model fields if new values are provided
         model.name = data.get("name", model.name)
+        model.objectives = data.get("objectives", model.objectives)
+        model.cross_validation = data.get("cross_validation", model.cross_validation)
+       
         model.description = data.get("description", model.description)
         model.about_dataset = data.get("about_dataset", model.about_dataset)
         model.best_algorithm = data.get("best_algorithm", model.best_algorithm)
@@ -455,29 +515,76 @@ def update_model(id):
         model.source_link = data.get("source_link", model.source_link)
         
         
-         # Validate and parse JSON fields
-        def parse_json_field(field_value):
+   
+        
+        
+        def parse_json_field(field_value, name):
             try:
-                return json.loads(field_value) if field_value else []
+                # Ensure the value is not None and is a string before parsing
+                return json.loads(field_value) if field_value and isinstance(field_value, str) else []
             except json.JSONDecodeError:
-                raise ValueError("Invalid JSON format")
+                raise ValueError(f"Invalid JSON format for {name}")
 
-        features_list = parse_json_field(data.get('features'))
+        features_list = parse_json_field(data.get('features'), 'features')
+        hyperparameter_list = parse_json_field(data.get('hyperparameter'), 'hyperparameter')
+        feature_creation_list = parse_json_field(data.get('feature_creation'), 'feature_creation')
+        result_list = parse_json_field(data.get('result'), 'result')
+        
      
         
 
-        # Validate features list
-        def validate_features(features_list):
-            for feature in features_list:
-                if not all(field in feature and feature[field] for field in ['name', 'datatype', 'desc']):
-                    return False
-            return True
+        def validate_and_clean_features(list, features):
+            # Validate and clean features
+            validate_list = []
 
-        if not validate_features(features_list):
-            return jsonify({"error": "Each feature must have non-empty 'name', 'datatype', and 'desc' fields"}), 400
+            for feature in list:
+                if all(field in feature and feature[field] for field in features):
+                    validate_list.append(feature)
+                elif not any(feature[field] for field in features):
+                    continue
+                else:
+                    return False, jsonify({"error": "Each parameter must have non-empty fields"}), 400
+
+            return True, validate_list
+        
+     
+
+        def validate_and_clean_result_features(dict_data):
+            # Validate result features
+            if not isinstance(dict_data, dict):
+                return False, {"error": "Invalid input format, expected a dictionary"}
+            if all(value not in [None, ''] for value in dict_data.values()):
+                return True, dict_data
+            else:
+                return False, {"error": "All fields in the dictionary must be non-empty"}
+
+           
+        
+        isValid ,feature_creation_list = validate_and_clean_features(feature_creation_list,features=['name', 'datatype',"desc"])
+        if not isValid:
+            return jsonify({"error": "Each Feature must have non-empty 'name', 'datatype','desc' fields"}), 400
         
         
-      
+        isValid ,features_list = validate_and_clean_features(features_list,features=['name', 'datatype',"desc"])
+        if not isValid:
+            return jsonify({"error": "Each Feature must have non-empty 'name', 'datatype' fields"}), 400
+        
+    
+        isValid ,hyperparameter_list = validate_and_clean_features(hyperparameter_list,features=['name', 'value'])
+        if not isValid:
+            return jsonify({"error": "Each Parameter must have non-empty 'name', 'value' fields"}), 400
+        print(result_list)
+        
+        isValid,result_valid  = validate_and_clean_result_features(result_list)
+        print(isValid)
+        if isValid : 
+            result_list = result_valid 
+         
+        if not isValid:
+            print(result_valid)
+            return jsonify({"error": "Each Feature must have non-empty 'name', 'datatype','desc' fields"}), 400
+        print(result_list)
+   
         # Check if 'algorithm_used' list is empty
         if not json.loads(data.get('algorithm_used')):
             return jsonify({"error": "At least one algorithm must have been used"}), 400
@@ -487,27 +594,50 @@ def update_model(id):
             if not item.strip():  # Check if the string is empty or contains only whitespace
                 return jsonify({"error": "Each algorithm entry must be a non-empty string"}), 400
     
-      # Validate JSON fields for 'features' and 'algorithm_used'
+       # Validate JSON fields for 'features' and 'algorithm_used'
         try:
             # If the fields are lists, dump them to JSON, otherwise leave them as they are
-            if isinstance(data.get("features"), list):
-                model.features = json.dumps(data["features"])
+        
+          
+            if isinstance(data.get('features'), list) and data.get('features'):
+                model.features = json.dumps(data.get('features'))
             else:
-                model.features = data.get("features", model.features)
-            
-            if isinstance(data.get("algorithm_used"), list):
-                model.algorithm_used = json.dumps(data["algorithm_used"])
+                model.features = data.get('features')
+                
+            if isinstance(data.get('hyperparameter'), list) and data.get('hyperparameter'):
+                model.hyperparameter = json.dumps(data.get('hyperparameter'))
             else:
-                model.algorithm_used = data.get("algorithm_used", model.algorithm_used)
+                model.hyperparameter = data.get('hyperparameter')
+                
+            if isinstance(data.get('feature_creation'), list) and data.get('feature_creation'):
+                model.feature_creation = json.dumps(data.get('feature_creation'))
+            else:
+                model.feature_creation = data.get('feature_creation')
+                
+            if isinstance(data.get('algorithm_used'), list) and data.get('algorithm_used'):
+                model.algorithm_used = json.dumps(data.get('algorithm_used'))
+            else:
+                model.algorithm_used = data.get('algorithm_used')
+                
+            if isinstance(data.get('result'), dict) and data.get('result'):
+                model.result = json.dumps(data.get('result'))
+            else:
+                model.result = data.get('result')
+                
+            if isinstance(data.get('data_cleaning'), list) and data.get('data_cleaning'):
+                model.data_cleaning = json.dumps(data.get('data_cleaning'))
+            else:
+                model.data_cleaning = data.get('data_cleaning')
+                
         except json.JSONDecodeError:
-            return jsonify({"error": "Invalid JSON format for features or algorithm_used"}), 400
-
-
+            return jsonify({"error": "Invalid JSON format for features "}), 400
+      
        
         
-        # File validation rules
+           # File validation rules
         allowed_image_extensions = {'png', 'jpg', 'jpeg'}
         allowed_model_extensions = {'pkl'}
+        allowed_dataset_extensions = {'csv'}
         max_file_size = 10 * 1024 * 1024  # 10 MB limit
 
         def allowed_file(filename, allowed_extensions):
@@ -516,77 +646,68 @@ def update_model(id):
         def validate_file(file, allowed_extensions):
             if not allowed_file(file.filename, allowed_extensions):
                 return f"File type not allowed: {file.filename}", 400
-            if len(file.read()) > max_file_size:
+
+            # Check file size
+            file.seek(0, os.SEEK_END)  # Move pointer to end of file
+            file_size = file.tell()
+            file.seek(0)  # Reset pointer to start of file
+
+            if file_size > max_file_size:
                 return f"File size exceeds limit (10MB): {file.filename}", 400
-            file.seek(0)  # Reset file pointer after size check
 
-        # Handle file updates with specific validation
-        if 'filename' in files:
-            # Validate for .pkl file
-            error = validate_file(files['filename'], allowed_model_extensions)
-            if error:
-                return jsonify({"error": error}), 400
-            # Delete old model file and save the new one
-            if model.filename:
-                old_file_path = os.path.join(app.config['MODEL_FILES'], model.filename)
-                if os.path.exists(old_file_path):
-                    os.remove(old_file_path)
-            filename = files['filename']
-            filename_path = os.path.join(app.config['MODEL_FILES'], get_timestamped_filename(filename.filename))
-            filename.save(filename_path)
-            model.filename = get_timestamped_filename(filename.filename)
+            return None
 
-        if 'scalerfile' in files:
-            # Validate for .pkl file
-            error = validate_file(files['scalerfile'], allowed_model_extensions)
-            if error:
-                return jsonify({"error": error}), 400
-            # Delete old scaler file and save the new one
-            if model.scalerfile:
-                old_scaler_path = os.path.join(app.config['SCALER_FILES'], model.scalerfile)
-                if os.path.exists(old_scaler_path):
-                    os.remove(old_scaler_path)
-            scalerfile = files['scalerfile']
-            scalerfile_path = os.path.join(app.config['SCALER_FILES'], get_timestamped_filename(scalerfile.filename))
-            scalerfile.save(scalerfile_path)
-            model.scalerfile = get_timestamped_filename(scalerfile.filename)
+        # def get_timestamped_filename(filename):
+        #     # Function to get a timestamped filename
+        #     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        #     name, ext = os.path.splitext(filename)
+        #     return f"{name}_{timestamp}{ext}"
 
-        if 'encodingfile' in files:
-            # Validate for .pkl file
-            error = validate_file(files['encodingfile'], allowed_model_extensions)
-            if error:
-                return jsonify({"error": error}), 400
-            # Delete old encoding file and save the new one
-            if model.encodingfile:
-                old_encoding_path = os.path.join(app.config['ENCODING_FILES'], model.encodingfile)
-                if os.path.exists(old_encoding_path):
-                    os.remove(old_encoding_path)
-            encodingfile = files['encodingfile']
-            encodingfile_path = os.path.join(app.config['ENCODING_FILES'], get_timestamped_filename(encodingfile.filename))
-            encodingfile.save(encodingfile_path)
-            model.encodingfile = get_timestamped_filename(encodingfile.filename)
+        def save_file(file, storage_path,existingFileName):
+          
+            if file:
+                # Construct the storage path
+                file_path = os.path.join(app.config[storage_path], get_timestamped_filename(file.filename))
 
-        if 'heatmap_image' in files:
-            # Validate for image file (png, jpg, jpeg)
-            error = validate_file(files['heatmap_image'], allowed_image_extensions)
-            if error:
-                return jsonify({"error": error}), 400
-            # Delete old heatmap image and save the new one
-            if model.heatmap_image:
-                old_heatmap_path = os.path.join(app.config['HEATMAP_FILES'], model.heatmap_image)
-                if os.path.exists(old_heatmap_path):
-                    os.remove(old_heatmap_path)
-            heatmap_image = files['heatmap_image']
-            heatmap_image_path = os.path.join(app.config['HEATMAP_FILES'], get_timestamped_filename(heatmap_image.filename))
-            heatmap_image.save(heatmap_image_path)
-            model.heatmap_image = get_timestamped_filename(heatmap_image.filename)
+                # Validate file
+                error = validate_file(
+                    file,
+                    allowed_model_extensions if file.filename.endswith('.pkl')
+                    else allowed_dataset_extensions if file.filename.endswith('.csv')
+                    else allowed_image_extensions
+                )
 
+                if error:
+                    return jsonify({"error": error}), 400
+
+                # Remove existing file if it exists
+                if existingFileName:
+                    existing_file_path = os.path.join(app.config[storage_path], existingFileName)
+                    if os.path.isfile(existing_file_path):
+                        os.remove(existing_file_path)
+
+                # Save the new file
+                file.save(file_path)
+                return get_timestamped_filename(file.filename)
+            return None
+
+        # Update model with saved file paths
+        model.filename = save_file(files.get('filename'), 'MODEL_FILES', model.filename) if files.get('filename') else model.filename
+        model.scalerfile = save_file(files.get('scalerfile'), 'SCALER_FILES',model.scalerfile) if files.get('scalerfile') else model.scalerfile
+        model.encodingfile = save_file(files.get('encodingfile'), 'ENCODING_FILES',model.encodingfile) if files.get('encodingfile') else model.encodingfile
+        model.heatmap_image = save_file(files.get('heatmap_image'), 'HEATMAP_FILES',model.heatmap_image) if files.get('heatmap_image') else model.heatmap_image
+        model.matrices = save_file(files.get('matrices'), 'MATRICES_FILES',model.matrices) if files.get('matrices') else model.matrices
+        model.dataset = save_file(files.get('dataset'), 'DATASET_FILES',model.dataset) if files.get('dataset') else model.dataset
+        model.confusion_matrices = save_file(files.get('confusion_matrices'), 'CONFUSION_MATRICES_FILES',model.confusion_matrices) if files.get('confusion_matrices') else model.confusion_matrices
+        model.final_matrices = save_file(files.get('final_matrices'), 'FINAL_MATRICES_FILES',model.final_matrices) if files.get('final_matrices') else model.final_matrices
+        model.final_confusion_matrices = save_file(files.get('final_confusion_matrices'), 'FINAL_CONFUSION_MATRICES_FILES',model.final_confusion_matrices) if files.get('final_confusion_matrices') else model.final_confusion_matrices
+        
         # Commit the updated model
         db.session.commit()
         return jsonify(model.to_json()), 200
     except Exception as e:
         db.session.rollback()
-        print("Error:", str(e))  # For debugging; remove or handle properly in production
+        print("Error:", str(e))
         return jsonify({"error": str(e)}), 500
 
 

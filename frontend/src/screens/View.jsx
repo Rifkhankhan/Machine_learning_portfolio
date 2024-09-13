@@ -23,11 +23,18 @@ import {
   Spinner,
   Flex,
   Image,
+  Table,
+  Thead,
+  Tr,
+  Th,
+  Tbody,
+  Td,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 import { useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import { BASE_URL } from "../App";
+import EditModal from "./../components/EditModal";
 
 const View = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -37,6 +44,27 @@ const View = () => {
   const [formErrors, setFormErrors] = useState({});
   const toast = useToast();
   const { id } = useParams();
+  const [csvData, setCsvData] = useState([]);
+  const [error, setError] = useState(null);
+  console.log(error);
+
+  useEffect(() => {
+    if (model?.dataset) {
+      fetch(`${BASE_URL}/dataset/${model.dataset}`)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+
+          return response.json();
+        })
+        .then((data) => {
+          // console.log("Fetched data:", JSON.stringify(data, null, 2)); // Make sure the data is formatted as expected
+          setCsvData(data);
+        })
+        .catch((err) => setError(err.message));
+    }
+  }, [model?.dataset]);
 
   useEffect(() => {
     const getModel = async () => {
@@ -214,19 +242,84 @@ const View = () => {
 
           {model?.dataset && (
             <Box>
-              <Heading as="h2" size="lg" mb={4}>
-                Dataset
-              </Heading>
-              <Text fontSize="md">{model?.dataset}</Text>
+              {error && <Text color="red.500">Error: {error}</Text>}
+
+              {csvData && csvData.length > 0 ? (
+                <>
+                  <Heading as="h2" size="lg" mb={4}>
+                    Data of the Dataset (max = 10)
+                  </Heading>
+                  <Box overflowX="auto">
+                    <Table
+                      variant="simple"
+                      size={{ base: "sm", md: "md" }} // Responsive table size
+                      bg="black"
+                      borderRadius="md"
+                      boxShadow="md"
+                      color="white" // Text color for readability on black background
+                    >
+                      <Thead>
+                        <Tr bg="teal.500">
+                          {Object.keys(csvData[0]).map((key) => (
+                            <Th
+                              key={key}
+                              color="white"
+                              fontWeight="bold"
+                              fontSize={{ base: "sm", md: "lg" }} // Responsive font size
+                              textAlign="center"
+                              p={{ base: 2, md: 4 }} // Responsive padding
+                            >
+                              {key}
+                            </Th>
+                          ))}
+                        </Tr>
+                      </Thead>
+                      <Tbody>
+                        {csvData.map((row, index) => (
+                          <Tr
+                            key={index}
+                            _hover={{ bg: "teal.600" }} // Darker hover effect for better visibility
+                            borderBottom="1px solid gray"
+                          >
+                            {Object.values(row).map((value, i) => (
+                              <Td
+                                key={i}
+                                textAlign="center"
+                                p={{ base: 2, md: 4 }} // Responsive padding
+                              >
+                                {value !== null &&
+                                value !== undefined &&
+                                value !== "" &&
+                                !Number.isNaN(value)
+                                  ? value
+                                  : "N/A"}
+                              </Td>
+                            ))}
+                          </Tr>
+                        ))}
+                      </Tbody>
+                    </Table>
+                  </Box>
+                </>
+              ) : (
+                <Text fontSize="md">No data available</Text>
+              )}
             </Box>
           )}
+
           {/* Data Cleaning operration  */}
           {model?.data_cleaning && (
             <Box>
               <Heading as="h2" size="lg" mb={4}>
                 Data Cleaning Process
               </Heading>
-              <Text fontSize="md">{model?.data_cleaning}</Text>
+              <List spacing={3}>
+                {model?.data_cleaning?.map((feature, index) => (
+                  <ListItem key={index}>
+                    <Text>{feature}</Text>
+                  </ListItem>
+                ))}
+              </List>
             </Box>
           )}
 
@@ -248,7 +341,25 @@ const View = () => {
               <Heading as="h2" size="lg" mb={4}>
                 Feature Creation
               </Heading>
-              <Text fontSize="md">{model?.data_cleaning}</Text>
+              <List spacing={3}>
+                {model?.feature_creation?.map((feature, index) => (
+                  <ListItem key={index}>
+                    <strong>{feature.name}:</strong> {feature.desc}
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+          )}
+
+          {model?.result && (
+            <Box>
+              <Heading as="h2" size="lg" mb={4}>
+                Target Feature
+              </Heading>
+              <Text fontSize="md">
+                <strong>{model?.result.name}</strong>
+              </Text>
+              <Text fontSize="md">{model?.result.desc}</Text>
             </Box>
           )}
 
@@ -286,6 +397,8 @@ const View = () => {
               <Heading as="h2" size="lg" mb={4}>
                 Cross Validation
               </Heading>
+
+              <Text>{model?.cross_validation}</Text>
             </Box>
           )}
           {/* Matrices */}
@@ -297,7 +410,7 @@ const View = () => {
               </Heading>
 
               <Image
-                src={`${BASE_URL}/matricesFiles/${model.matricesFiles}`}
+                src={`${BASE_URL}/matricesFiles/${model.matrices}`}
                 alt=" matrices Visualization"
                 borderRadius="md"
                 boxSize="full"
@@ -328,6 +441,13 @@ const View = () => {
               <Heading as="h2" size="lg" mb={4}>
                 Hyperparameter
               </Heading>
+              <List spacing={3}>
+                {model?.hyperparameter?.map((feature, index) => (
+                  <ListItem key={index}>
+                    <strong>{feature.name}:</strong> {feature.value}
+                  </ListItem>
+                ))}
+              </List>
             </Box>
           )}
           {/* Confusion Matrices After using Hyperparameter */}

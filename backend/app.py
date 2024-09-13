@@ -1,8 +1,12 @@
-from flask import Flask, send_from_directory, jsonify
+from flask import Flask, send_from_directory, jsonify,request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import os
+import json
+import pandas as pd
+import numpy as np
 
+import csv
 app = Flask(__name__)
 
 # Configure CORS
@@ -29,6 +33,32 @@ db = SQLAlchemy(app)
 frontend_folder = os.path.join(os.getcwd(), "..", "frontend")
 dist_folder = os.path.join(frontend_folder, "dist")
 
+
+# # New route to get CSV headers from a stored CSV file
+@app.route('/api/dataset/<filename>', methods=['GET'])
+def get_dataset(filename):
+    try:
+        file_path = os.path.join(app.config['DATASET_FILES'], filename)
+        if not os.path.isfile(file_path):
+            return jsonify({"error": "File not found"}), 404
+
+        # Read the CSV file using pandas
+        df = pd.read_csv(file_path)
+        
+        # Replace NaN values with None (which converts to null in JSON)
+        df = df.replace({np.nan: None})
+        
+        # Limit to the first 10 rows
+        limited_df = df.head(10)
+
+        # Convert DataFrame to JSON
+        data = limited_df.to_dict(orient='records')
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+    
+    
 # Serve heatmap images
 @app.route('/api/<file_type>/<filename>')
 def get_heatmap_image(file_type,filename):
