@@ -1,5 +1,4 @@
 
-# edit model 
 # predict model ,route
 # check view file
 

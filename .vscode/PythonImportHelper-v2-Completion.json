@@ -805,6 +805,15 @@
         "documentation": {}
     },
     {
+        "label": "log_request_info",
+        "kind": 2,
+        "importPath": "backend.app",
+        "description": "backend.app",
+        "peekOfCode": "def log_request_info():\n    print(f\"Requested URL: {request.url}\")\n# # New route to get CSV headers from a stored CSV file\n@app.route('/api/dataset/<filename>', methods=['GET'])\ndef get_dataset(filename):\n    try:\n        file_path = os.path.join(app.config['DATASET_FILES'], filename)\n        if not os.path.isfile(file_path):\n            return jsonify({\"error\": \"File not found\"}), 404\n        # Read the CSV file using pandas",
+        "detail": "backend.app",
+        "documentation": {}
+    },
+    {
         "label": "get_dataset",
         "kind": 2,
         "importPath": "backend.app",
@@ -926,7 +935,7 @@
         "kind": 5,
         "importPath": "backend.app",
         "description": "backend.app",
-        "peekOfCode": "app.config['MATRICES_FILES'] = 'matricesFiles'\napp.config['DATASET_FILES'] = 'datasetFiles'\napp.config['FINAL_MATRICES_FILES'] = 'finalMatricesFiles'\napp.config['CONFUSION_MATRICES_FILES'] = 'confusionMatricesFiles'\napp.config['FINAL_CONFUSION_MATRICES_FILES'] = 'finalConfusionMatricesFiles'\ndb = SQLAlchemy(app)\n# Define the paths for your frontend static files\nfrontend_folder = os.path.join(os.getcwd(), \"..\", \"frontend\")\ndist_folder = os.path.join(frontend_folder, \"dist\")\n# # New route to get CSV headers from a stored CSV file",
+        "peekOfCode": "app.config['MATRICES_FILES'] = 'matricesFiles'\napp.config['DATASET_FILES'] = 'datasetFiles'\napp.config['FINAL_MATRICES_FILES'] = 'finalMatricesFiles'\napp.config['CONFUSION_MATRICES_FILES'] = 'confusionMatricesFiles'\napp.config['FINAL_CONFUSION_MATRICES_FILES'] = 'finalConfusionMatricesFiles'\ndb = SQLAlchemy(app)\n# Define the paths for your frontend static files\nfrontend_folder = os.path.join(os.getcwd(), \"..\", \"frontend\")\ndist_folder = os.path.join(frontend_folder, \"dist\")\n@app.before_request",
         "detail": "backend.app",
         "documentation": {}
     },
@@ -935,7 +944,7 @@
         "kind": 5,
         "importPath": "backend.app",
         "description": "backend.app",
-        "peekOfCode": "app.config['DATASET_FILES'] = 'datasetFiles'\napp.config['FINAL_MATRICES_FILES'] = 'finalMatricesFiles'\napp.config['CONFUSION_MATRICES_FILES'] = 'confusionMatricesFiles'\napp.config['FINAL_CONFUSION_MATRICES_FILES'] = 'finalConfusionMatricesFiles'\ndb = SQLAlchemy(app)\n# Define the paths for your frontend static files\nfrontend_folder = os.path.join(os.getcwd(), \"..\", \"frontend\")\ndist_folder = os.path.join(frontend_folder, \"dist\")\n# # New route to get CSV headers from a stored CSV file\n@app.route('/api/dataset/<filename>', methods=['GET'])",
+        "peekOfCode": "app.config['DATASET_FILES'] = 'datasetFiles'\napp.config['FINAL_MATRICES_FILES'] = 'finalMatricesFiles'\napp.config['CONFUSION_MATRICES_FILES'] = 'confusionMatricesFiles'\napp.config['FINAL_CONFUSION_MATRICES_FILES'] = 'finalConfusionMatricesFiles'\ndb = SQLAlchemy(app)\n# Define the paths for your frontend static files\nfrontend_folder = os.path.join(os.getcwd(), \"..\", \"frontend\")\ndist_folder = os.path.join(frontend_folder, \"dist\")\n@app.before_request\ndef log_request_info():",
         "detail": "backend.app",
         "documentation": {}
     },
@@ -944,7 +953,7 @@
         "kind": 5,
         "importPath": "backend.app",
         "description": "backend.app",
-        "peekOfCode": "app.config['FINAL_MATRICES_FILES'] = 'finalMatricesFiles'\napp.config['CONFUSION_MATRICES_FILES'] = 'confusionMatricesFiles'\napp.config['FINAL_CONFUSION_MATRICES_FILES'] = 'finalConfusionMatricesFiles'\ndb = SQLAlchemy(app)\n# Define the paths for your frontend static files\nfrontend_folder = os.path.join(os.getcwd(), \"..\", \"frontend\")\ndist_folder = os.path.join(frontend_folder, \"dist\")\n# # New route to get CSV headers from a stored CSV file\n@app.route('/api/dataset/<filename>', methods=['GET'])\ndef get_dataset(filename):",
+        "peekOfCode": "app.config['FINAL_MATRICES_FILES'] = 'finalMatricesFiles'\napp.config['CONFUSION_MATRICES_FILES'] = 'confusionMatricesFiles'\napp.config['FINAL_CONFUSION_MATRICES_FILES'] = 'finalConfusionMatricesFiles'\ndb = SQLAlchemy(app)\n# Define the paths for your frontend static files\nfrontend_folder = os.path.join(os.getcwd(), \"..\", \"frontend\")\ndist_folder = os.path.join(frontend_folder, \"dist\")\n@app.before_request\ndef log_request_info():\n    print(f\"Requested URL: {request.url}\")",
         "detail": "backend.app",
         "documentation": {}
     },
@@ -953,7 +962,7 @@
         "kind": 5,
         "importPath": "backend.app",
         "description": "backend.app",
-        "peekOfCode": "app.config['CONFUSION_MATRICES_FILES'] = 'confusionMatricesFiles'\napp.config['FINAL_CONFUSION_MATRICES_FILES'] = 'finalConfusionMatricesFiles'\ndb = SQLAlchemy(app)\n# Define the paths for your frontend static files\nfrontend_folder = os.path.join(os.getcwd(), \"..\", \"frontend\")\ndist_folder = os.path.join(frontend_folder, \"dist\")\n# # New route to get CSV headers from a stored CSV file\n@app.route('/api/dataset/<filename>', methods=['GET'])\ndef get_dataset(filename):\n    try:",
+        "peekOfCode": "app.config['CONFUSION_MATRICES_FILES'] = 'confusionMatricesFiles'\napp.config['FINAL_CONFUSION_MATRICES_FILES'] = 'finalConfusionMatricesFiles'\ndb = SQLAlchemy(app)\n# Define the paths for your frontend static files\nfrontend_folder = os.path.join(os.getcwd(), \"..\", \"frontend\")\ndist_folder = os.path.join(frontend_folder, \"dist\")\n@app.before_request\ndef log_request_info():\n    print(f\"Requested URL: {request.url}\")\n# # New route to get CSV headers from a stored CSV file",
         "detail": "backend.app",
         "documentation": {}
     },
@@ -962,7 +971,7 @@
         "kind": 5,
         "importPath": "backend.app",
         "description": "backend.app",
-        "peekOfCode": "app.config['FINAL_CONFUSION_MATRICES_FILES'] = 'finalConfusionMatricesFiles'\ndb = SQLAlchemy(app)\n# Define the paths for your frontend static files\nfrontend_folder = os.path.join(os.getcwd(), \"..\", \"frontend\")\ndist_folder = os.path.join(frontend_folder, \"dist\")\n# # New route to get CSV headers from a stored CSV file\n@app.route('/api/dataset/<filename>', methods=['GET'])\ndef get_dataset(filename):\n    try:\n        file_path = os.path.join(app.config['DATASET_FILES'], filename)",
+        "peekOfCode": "app.config['FINAL_CONFUSION_MATRICES_FILES'] = 'finalConfusionMatricesFiles'\ndb = SQLAlchemy(app)\n# Define the paths for your frontend static files\nfrontend_folder = os.path.join(os.getcwd(), \"..\", \"frontend\")\ndist_folder = os.path.join(frontend_folder, \"dist\")\n@app.before_request\ndef log_request_info():\n    print(f\"Requested URL: {request.url}\")\n# # New route to get CSV headers from a stored CSV file\n@app.route('/api/dataset/<filename>', methods=['GET'])",
         "detail": "backend.app",
         "documentation": {}
     },
@@ -971,7 +980,7 @@
         "kind": 5,
         "importPath": "backend.app",
         "description": "backend.app",
-        "peekOfCode": "db = SQLAlchemy(app)\n# Define the paths for your frontend static files\nfrontend_folder = os.path.join(os.getcwd(), \"..\", \"frontend\")\ndist_folder = os.path.join(frontend_folder, \"dist\")\n# # New route to get CSV headers from a stored CSV file\n@app.route('/api/dataset/<filename>', methods=['GET'])\ndef get_dataset(filename):\n    try:\n        file_path = os.path.join(app.config['DATASET_FILES'], filename)\n        if not os.path.isfile(file_path):",
+        "peekOfCode": "db = SQLAlchemy(app)\n# Define the paths for your frontend static files\nfrontend_folder = os.path.join(os.getcwd(), \"..\", \"frontend\")\ndist_folder = os.path.join(frontend_folder, \"dist\")\n@app.before_request\ndef log_request_info():\n    print(f\"Requested URL: {request.url}\")\n# # New route to get CSV headers from a stored CSV file\n@app.route('/api/dataset/<filename>', methods=['GET'])\ndef get_dataset(filename):",
         "detail": "backend.app",
         "documentation": {}
     },
@@ -980,7 +989,7 @@
         "kind": 5,
         "importPath": "backend.app",
         "description": "backend.app",
-        "peekOfCode": "frontend_folder = os.path.join(os.getcwd(), \"..\", \"frontend\")\ndist_folder = os.path.join(frontend_folder, \"dist\")\n# # New route to get CSV headers from a stored CSV file\n@app.route('/api/dataset/<filename>', methods=['GET'])\ndef get_dataset(filename):\n    try:\n        file_path = os.path.join(app.config['DATASET_FILES'], filename)\n        if not os.path.isfile(file_path):\n            return jsonify({\"error\": \"File not found\"}), 404\n        # Read the CSV file using pandas",
+        "peekOfCode": "frontend_folder = os.path.join(os.getcwd(), \"..\", \"frontend\")\ndist_folder = os.path.join(frontend_folder, \"dist\")\n@app.before_request\ndef log_request_info():\n    print(f\"Requested URL: {request.url}\")\n# # New route to get CSV headers from a stored CSV file\n@app.route('/api/dataset/<filename>', methods=['GET'])\ndef get_dataset(filename):\n    try:\n        file_path = os.path.join(app.config['DATASET_FILES'], filename)",
         "detail": "backend.app",
         "documentation": {}
     },
@@ -989,7 +998,7 @@
         "kind": 5,
         "importPath": "backend.app",
         "description": "backend.app",
-        "peekOfCode": "dist_folder = os.path.join(frontend_folder, \"dist\")\n# # New route to get CSV headers from a stored CSV file\n@app.route('/api/dataset/<filename>', methods=['GET'])\ndef get_dataset(filename):\n    try:\n        file_path = os.path.join(app.config['DATASET_FILES'], filename)\n        if not os.path.isfile(file_path):\n            return jsonify({\"error\": \"File not found\"}), 404\n        # Read the CSV file using pandas\n        df = pd.read_csv(file_path)",
+        "peekOfCode": "dist_folder = os.path.join(frontend_folder, \"dist\")\n@app.before_request\ndef log_request_info():\n    print(f\"Requested URL: {request.url}\")\n# # New route to get CSV headers from a stored CSV file\n@app.route('/api/dataset/<filename>', methods=['GET'])\ndef get_dataset(filename):\n    try:\n        file_path = os.path.join(app.config['DATASET_FILES'], filename)\n        if not os.path.isfile(file_path):",
         "detail": "backend.app",
         "documentation": {}
     },

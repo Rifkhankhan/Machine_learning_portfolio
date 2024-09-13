@@ -33,6 +33,9 @@ db = SQLAlchemy(app)
 frontend_folder = os.path.join(os.getcwd(), "..", "frontend")
 dist_folder = os.path.join(frontend_folder, "dist")
 
+@app.before_request
+def log_request_info():
+    print(f"Requested URL: {request.url}")
 
 # # New route to get CSV headers from a stored CSV file
 @app.route('/api/dataset/<filename>', methods=['GET'])
