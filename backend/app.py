@@ -10,7 +10,7 @@ import csv
 app = Flask(__name__)
 
 # Configure CORS
-# CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Configure the database (update URI for production as needed)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///models.db')
