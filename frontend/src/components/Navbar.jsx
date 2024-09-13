@@ -54,9 +54,16 @@ const Navbar = () => {
             display={{ base: "flex", md: "flex" }}
             flex="1"
           >
-            <Link to="/" style={getLinkStyle("/")}>
-              <img src="/react.png" alt="React logo" width={40} height={40} />
+            <Link to="/" style={{ ...getLinkStyle("/") }}>
+              <img
+                src="/Rifkhan.jpg"
+                alt="React logo"
+                width={50}
+                height={50}
+                style={{ borderRadius: "10%" }}
+              />
             </Link>
+
             <Text
               as={Link}
               to="/"
