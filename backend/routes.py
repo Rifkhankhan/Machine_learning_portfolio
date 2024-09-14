@@ -418,6 +418,7 @@ def get_models():
   
         # Convert the models to a list of dictionaries
         result = [model.to_json() for model in models]
+       
  
         
         # Create a pagination response
@@ -798,8 +799,7 @@ def predict():
         # Retrieve formData and modelId from the request
         formData = request.json.get("formData")  # Extract formData as a dictionary
         modelId = request.json.get("modelId")    # Extract modelId as a string or int
-       
-
+        
         if not modelId or not formData:
             return jsonify({"error": "Model ID and form data are required"}), 400
 
@@ -810,6 +810,8 @@ def predict():
             return jsonify({"error": "Data record not found"}), 404
 
         data = data_record.to_json()
+       
+
        
         # Extract the model filename from the data record
         model_filename = data_record.to_json().get('filename')  # Assuming 'filename' contains the path to the .pkl file
@@ -824,7 +826,7 @@ def predict():
         
         scaler = None
         encoder = None
-        
+        print('ok')
         # Load the scaler if it exists
         if scaler_filename:
             scaler_file_path = os.path.join(app.config['SCALER_FILES'], scaler_filename)
@@ -833,6 +835,7 @@ def predict():
             else:
                 print(f"Scaler file not found at {scaler_file_path}")
         
+        print('ok')
         # Load the encoder if it exists
         if encoding_filename:
             encoding_file_path = os.path.join(app.config['ENCODING_FILES'], encoding_filename)
@@ -847,6 +850,10 @@ def predict():
         # Get the features field from the record
         features = data_record.to_json().get('features')  # Assuming features is a list of dictionaries
         
+        # Ensure that features is a list, and filter out where 'calculate' is True
+        features = [feature for feature in features if feature.get('calculate')]
+        print(features)
+        print(len(features))
         # Load the model from file
         model = joblib.load(model_file_path)
      
@@ -876,6 +883,7 @@ def predict():
         input_data = [input_data]
     
         print(input_data)
+      
       
    
 

@@ -10,7 +10,7 @@ import csv
 app = Flask(__name__)
 
 # Configure CORS
-# CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Configure the database (update URI for production as needed)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///models.db')
@@ -33,9 +33,9 @@ db = SQLAlchemy(app)
 frontend_folder = os.path.join(os.getcwd(), "..", "frontend")
 dist_folder = os.path.join(frontend_folder, "dist")
 
-@app.before_request
-def log_request_info():
-    print(f"Requested URL: {request.url}")
+# @app.before_request
+# def log_request_info():
+#     # print(f"Requested URL: {request.url}")
 
 # # New route to get CSV headers from a stored CSV file
 @app.route('/api/dataset/<filename>', methods=['GET'])
