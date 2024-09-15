@@ -351,32 +351,32 @@ def create_model():
 
         
         # Save files if they exist, otherwise assign None
-        new_filename = save_file(filename, 'MODEL_FILES') if filename else None
-        new_scalerfile = save_file(scalerfile, 'SCALER_FILES') if scalerfile else None
-        new_encodingfile = save_file(encodingfile, 'ENCODING_FILES') if encodingfile else None
-        new_heatmap_image = save_file(heatmap_image, 'HEATMAP_FILES') if heatmap_image else None
-        new_matrices = save_file(matrices, 'MATRICES_FILES') if matrices else None
-        new_dataset = save_file(dataset, 'DATASET_FILES') if dataset else None
-        new_confusion_matrices = save_file(confusion_matrices, 'CONFUSION_MATRICES_FILES') if confusion_matrices else None
-        new_final_matrices = save_file(final_matrices, 'FINAL_MATRICES_FILES') if final_matrices else None
-        new_final_confusion_matrices = save_file(final_confusion_matrices, 'FINAL_CONFUSION_MATRICES_FILES') if final_confusion_matrices else None
+        # new_filename = save_file(filename, 'MODEL_FILES') if filename else None
+        # new_scalerfile = save_file(scalerfile, 'SCALER_FILES') if scalerfile else None
+        # new_encodingfile = save_file(encodingfile, 'ENCODING_FILES') if encodingfile else None
+        # new_heatmap_image = save_file(heatmap_image, 'HEATMAP_FILES') if heatmap_image else None
+        # new_matrices = save_file(matrices, 'MATRICES_FILES') if matrices else None
+        # new_dataset = save_file(dataset, 'DATASET_FILES') if dataset else None
+        # new_confusion_matrices = save_file(confusion_matrices, 'CONFUSION_MATRICES_FILES') if confusion_matrices else None
+        # new_final_matrices = save_file(final_matrices, 'FINAL_MATRICES_FILES') if final_matrices else None
+        # new_final_confusion_matrices = save_file(final_confusion_matrices, 'FINAL_CONFUSION_MATRICES_FILES') if final_confusion_matrices else None
         
         # Create new model instance
         new_model = Model(
             name=name,
             objectives=objectives,
             description=description,
-            filename=new_filename,
-            scalerfile=new_scalerfile,
+            filename=save_file(filename, 'MODEL_FILES') if filename else None,
+            scalerfile= save_file(scalerfile, 'SCALER_FILES') if scalerfile else None,
             result=json.dumps(result_list),
-            encodingfile=new_encodingfile,
-            heatmap_image=new_heatmap_image,
-            matrices=new_matrices,
-            final_matrices=new_final_matrices,
+            encodingfile=save_file(encodingfile, 'ENCODING_FILES') if encodingfile else None,
+            heatmap_image=save_file(heatmap_image, 'HEATMAP_FILES') if heatmap_image else None,
+            matrices=save_file(matrices, 'MATRICES_FILES') if matrices else None,
+            final_matrices=save_file(final_matrices, 'FINAL_MATRICES_FILES') if final_matrices else None,
             cross_validation=cross_validation,
-            final_confusion_matrices=new_final_confusion_matrices,
-            dataset=new_dataset,
-            confusion_matrices=new_confusion_matrices,
+            final_confusion_matrices=save_file(final_confusion_matrices, 'FINAL_CONFUSION_MATRICES_FILES') if final_confusion_matrices else None,
+            dataset=save_file(dataset, 'DATASET_FILES') if dataset else None,
+            confusion_matrices=save_file(confusion_matrices, 'CONFUSION_MATRICES_FILES') if confusion_matrices else None,
             about_dataset=about_dataset,
             best_algorithm=best_algorithm,
             features=json.dumps(features_list),
