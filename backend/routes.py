@@ -320,7 +320,7 @@ def create_model():
         allowed_image_extensions = {'png', 'jpg', 'jpeg'}
         allowed_model_extensions = {'pkl'}
         allowed_dataset_extensions = {'csv'}
-        max_file_size = 10 * 1024 * 1024  # 10 MB limit
+        max_file_size = 100 * 1024 * 1024  # 10 MB limit
 
         def allowed_file(filename, allowed_extensions):
             return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
@@ -345,7 +345,10 @@ def create_model():
                 if error:
                     return jsonify({"error": error}), 400
                 file_path = os.path.join(app.config[storage_path], get_timestamped_filename(file.filename))
+                print(file_path)
                 file.save(file_path)
+                # print(get_timestamped_filename(file.filename))
+                
                 return get_timestamped_filename(file.filename)
             return None
 
@@ -360,7 +363,8 @@ def create_model():
         # new_confusion_matrices = save_file(confusion_matrices, 'CONFUSION_MATRICES_FILES') if confusion_matrices else None
         # new_final_matrices = save_file(final_matrices, 'FINAL_MATRICES_FILES') if final_matrices else None
         # new_final_confusion_matrices = save_file(final_confusion_matrices, 'FINAL_CONFUSION_MATRICES_FILES') if final_confusion_matrices else None
-        
+        print("filename: ",save_file(scalerfile, 'SCALER_FILES') if scalerfile else None)
+        print("filename: ",save_file(filename, 'MODEL_FILES') if filename else None)
         # Create new model instance
         new_model = Model(
             name=name,
