@@ -105,12 +105,12 @@ const Navbar = () => {
               Models
             </Text>
 
-            <Text as={Link} to="/about" style={getLinkStyle("/about")}>
-              About
-            </Text>
+            {/* <Text as={Link} to="/ann" style={getLinkStyle("/ann")}>
+              ANN
+            </Text> */}
 
-            <Text as={Link} to="/contact" style={getLinkStyle("/contact")}>
-              Contact
+            <Text as={Link} to="/cnn" style={getLinkStyle("/cnn")}>
+              CNN
             </Text>
           </Flex>
         </Flex>
@@ -127,12 +127,12 @@ const Navbar = () => {
               Models
             </Text>
 
-            <Text as={Link} to="/about" style={getLinkStyle("/about")}>
-              About
-            </Text>
+            {/* <Text as={Link} to="/ann" style={getLinkStyle("/ann")}>
+              ANN
+            </Text> */}
 
-            <Text as={Link} to="/contact" style={getLinkStyle("/contact")}>
-              Contact
+            <Text as={Link} to="/cnn" style={getLinkStyle("/cnn")}>
+              CNN
             </Text>
           </VStack>
         </Collapse>

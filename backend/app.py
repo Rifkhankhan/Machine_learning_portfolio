@@ -24,6 +24,8 @@ app.config['DATASET_FILES'] = 'datasetFiles'
 app.config['FINAL_MATRICES_FILES'] = 'finalMatricesFiles'
 app.config['CONFUSION_MATRICES_FILES'] = 'confusionMatricesFiles'
 app.config['FINAL_CONFUSION_MATRICES_FILES'] = 'finalConfusionMatricesFiles'
+app.config['ANN'] = 'annFiles'
+app.config['CNN'] = 'cnnFiles'
 
 
 

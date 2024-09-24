@@ -2,7 +2,9 @@
 # predict model ,route
 # check view file
 
-
+from flask import Flask, request, jsonify
+import os
+import io
 from app import app, db
 from flask import request, jsonify
 from models import Friend
@@ -13,10 +15,13 @@ import os
 import joblib
 import sklearn
 import json
-from models import Feature
-
+from tensorflow.keras.preprocessing.image import img_to_array
+import numpy as np
+from PIL import Image
+from keras.models import load_model
 
 from functools import wraps
+from models import CNN
 
 # Set the secret password from environment variable or use a default one
 SECRET_PASSWORD = os.getenv('SECRET_PASSWORD', 'default_password')
@@ -932,4 +937,481 @@ def predict():
 
     except Exception as e:
         print("Error:", str(e))  # For debugging purposes
+        return jsonify({"error": str(e)}), 500
+
+
+
+# CNN
+@app.route("/api/cnn", methods=["POST"])
+@require_password
+def create_cnn_model():
+    try:
+        # Check if files are present
+        if 'filename' not in request.files:
+            return jsonify({"error": "Missing required file(s)"}), 400
+          # Extract form data and files
+        data = request.form
+      
+        # Extract form data
+        name = request.form.get("name")
+        objectives = request.form.get("objectives")
+        result = request.form.get("result")
+        source_link = request.form.get("source_link", None)
+
+        # Validate required form fields
+        required_fields = [
+                            "name", 
+                           'source_link',
+                           'objectives',
+                           
+                           ]
+        missing_fields = [field for field in required_fields if field not in request.form or not request.form.get(field)]
+
+        if missing_fields:
+            return jsonify({"error": f"Missing required field(s): {', '.join(missing_fields)}"}), 400
+        
+
+        # For example, if "features" is required but exists as an empty list, it should still be considered missing
+        empty_fields = [
+            field for field in required_fields
+            if field in data and not data[field]  # Check in data if field exists but is empty
+            
+        ]
+       
+ # Combine missing and empty fields
+        invalid_fields = missing_fields + empty_fields
+      
+          # If there are any invalid fields, you can return an error
+        if invalid_fields:
+            raise ValueError(f"Missing or empty required fields: {', '.join(invalid_fields)}")
+        
+        # Validate and parse JSON fields
+        def parse_json_field(field_value):
+            try:
+                return json.loads(field_value) if field_value else []
+            except json.JSONDecodeError:
+                raise ValueError("Invalid JSON format")
+
+        result_list = parse_json_field(result)
+     
+    
+        # Check if 'algorithm_used' list is empty
+        if not json.loads(result):
+            return jsonify({"error": "At least one result must have been used"}), 400
+        
+      
+        # Validate that each item in the list is a non-empty string
+        for item in json.loads(result):
+            if not item.strip():  # Check if the string is empty or contains only whitespace
+                return jsonify({"error": "Each result entry must be a non-empty string"}), 400
+        
+    
+        # Validate JSON fields for 'features' and 'algorithm_used'
+        try:
+            # If the fields are lists, dump them to JSON, otherwise leave them as they are
+          
+            if isinstance(result, list):
+                result = json.dumps(result)
+                
+        except json.JSONDecodeError:
+            return jsonify({"error": "Invalid JSON format for features "}), 400
+
+
+
+      
+       
+        
+        # Extract file data
+        filename = request.files.get('filename') if 'filename' in request.files else None
+
+        # Validate filenames
+        if not filename.filename:
+            return jsonify({"error": "Invalid file(s)"}), 400
+
+        # File validation rules
+        allowed_model_extensions = {'h5'}
+        max_file_size = 100 * 1024 * 1024  # 10 MB limit
+
+        def allowed_file(filename, allowed_extensions):
+            return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
+        def validate_file(file, allowed_extensions):
+            if not allowed_file(file.filename, allowed_extensions):
+                return f"File type not allowed: {file.filename}", 400
+            if len(file.read()) > max_file_size:
+                return f"File size exceeds limit (10MB): {file.filename}", 400
+            file.seek(0)  # Reset file pointer after size check
+
+        # Save files with timestamp in the filename
+        def save_file(file, storage_path):
+            if file:
+                error = validate_file(
+                    file,
+                    allowed_model_extensions
+                )
+
+                if error:
+                    return jsonify({"error": error}), 400
+                filename = get_timestamped_filename(file.filename)
+                file_path = os.path.join(app.config[storage_path], filename)
+                print(file_path)
+                file.save(file_path)
+                # print(get_timestamped_filename(file.filename))
+                
+                return filename
+            return None
+
+        
+     
+      
+        # Create new model instance
+        new_model = CNN(
+            name=name,
+            filename=save_file(filename, 'CNN') if filename else None,
+            result=json.dumps(result_list),
+            source_link=source_link,
+            objectives = objectives,
+        )
+        
+
+        db.session.add(new_model)
+        db.session.commit()
+
+        return jsonify(new_model.to_json()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print("Error:", str(e))  # For debugging; remove or handle properly in production
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/cnn", methods=["GET"])
+def get_cnn_models():
+    try:
+        # Get pagination parameters from request
+        page = request.args.get('page', 1, type=int)  # Default to page 1 if not provided
+        per_page = request.args.get('per_page', 10, type=int)  # Default to 10 items per page
+        
+        # Calculate offset and limit
+        offset = (page - 1) * per_page
+        limit = per_page
+
+        # Query with offset and limit
+        total_count = db.session.query(CNN).count()  # Get total count of models
+        models = db.session.query(CNN).order_by(desc(CNN.created_at)).offset(offset).limit(limit).all()
+  
+        # Convert the models to a list of dictionaries
+        result = [model.to_json() for model in models]
+       
+ 
+        
+        # Create a pagination response
+        response = {
+            "models": result,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": total_count,
+                "total_pages": (total_count + per_page - 1) // per_page  # Ceiling division
+            }
+        }
+        
+        return jsonify(response), 200
+    except Exception as e:
+        print("Error:", str(e))  # For debugging; remove or handle properly in production
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/cnn/<int:id>", methods=["GET"])
+def get_cnn_model(id):
+    try:
+        # Query the model by ID
+        model = CNN.query.get(id)
+        if model is None:
+            return jsonify({"error": "CNN Model not found"}), 404
+        
+        return jsonify(model.to_json()), 200
+    except Exception as e:
+        print("Error:", str(e))  # For debugging; remove or handle properly in production
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/cnn/<int:id>", methods=["DELETE"])
+@require_password
+def delete_cnn_model(id):
+    try:
+        # Query the model by ID
+        model = CNN.query.get(id)
+        if model is None:
+            return jsonify({"error": "CNN Model not found"}), 404
+        
+        model_data = model.to_json()
+        
+        # Extract the file paths from the model
+        
+        file_info = [
+                (app.config['CNN'], model_data.get('filename'), "Model")
+            ]
+        
+         # Delete each file if it exists
+        for directory, filename, file_description in file_info:
+            delete_file_if_exists(directory, filename, file_description)
+            
+
+        db.session.delete(model)
+        db.session.commit()
+        return jsonify({"msg": "CNN Model deleted"}), 200
+    except Exception as e:
+        db.session.rollback()
+        print("Error:", str(e))  # For debugging; remove or handle properly in production
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/cnn/<int:id>", methods=["PATCH"])
+@require_password
+def update_cnn_model(id):
+    try:
+        # Query the model by ID
+        model = CNN.query.get(id)
+        if model is None:
+            return jsonify({"error": "CNN Model not found"}), 404
+        
+         # Extract form data and files
+        data = request.form
+        
+        files = request.files
+        
+         # Validate required form fields
+        required_fields = [
+                            "name", 
+                           'objectives',
+                           'source_link',
+                           'result'
+                           ]
+        
+        # Check if required fields are either missing or empty
+        missing_fields = [field for field in required_fields if field not in request.form or not request.form.get(field)]
+
+
+        # For example, if "features" is required but exists as an empty list, it should still be considered missing
+        empty_fields = [
+            field for field in required_fields
+            if field in data and not data[field]  # Check in data if field exists but is empty
+            or field in model.__dict__ and not model.__dict__[field]  # Check in model's attributes for empty values
+        ]
+        
+
+        # Combine missing and empty fields
+        invalid_fields = missing_fields + empty_fields
+      
+
+        # If there are any invalid fields, you can return an error
+        if invalid_fields:
+            raise ValueError(f"Missing or empty required fields: {', '.join(invalid_fields)}")
+        
+        # Update model fields if new values are provided
+        model.name = data.get("name", model.name)
+        model.objectives = data.get("objectives", model.objectives)
+        model.source_link = data.get("source_link", model.source_link)
+        
+      
+        # Check if 'result' list is empty
+        if not json.loads(data.get('result')):
+            return jsonify({"error": "At least one result must have been used"}), 400
+        
+        # Validate that each item in the list is a non-empty string
+        for item in json.loads(data.get('result')):
+            if not item.strip():  # Check if the string is empty or contains only whitespace
+                return jsonify({"error": "result entry must be a non-empty string"}), 400
+    
+       # Validate JSON fields for 'features' and 'result'
+        try:
+            # If the fields are lists, dump them to JSON, otherwise leave them as they are
+          
+            if isinstance(data.get('result'), list) and data.get('result'):
+                model.result = json.dumps(data.get('result'))
+            else:
+                model.result = data.get('result')
+        
+                
+        except json.JSONDecodeError:
+            return jsonify({"error": "Invalid JSON format for result "}), 400
+      
+       
+        
+           # File validation rules
+        allowed_model_extensions = {'h5','hdf5'}
+        max_file_size = 50 * 1024 * 1024  # 10 MB limit
+
+        def allowed_file(filename, allowed_extensions):
+            return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
+        def validate_file(file, allowed_extensions):
+            if not allowed_file(file.filename, allowed_extensions):
+                return f"File type not allowed: {file.filename}", 400
+
+            # Check file size
+            file.seek(0, os.SEEK_END)  # Move pointer to end of file
+            file_size = file.tell()
+            file.seek(0)  # Reset pointer to start of file
+
+            if file_size > max_file_size:
+                return f"File size exceeds limit (10MB): {file.filename}", 400
+
+            return None
+
+        # Validate file
+        allowed_model_extensions = ['.h5', '.hdf5']  # Add your allowed model extensions here
+
+
+        def save_file(file, storage_path,existingFileName):
+          
+            if file:
+                # Construct the storage path
+                filename = get_timestamped_filename(file.filename)
+                file_path = os.path.join(app.config[storage_path], filename)
+
+                # Validate file
+                error = validate_file(
+                    file,
+                    allowed_model_extensions 
+                 
+                )
+
+                if error:
+                    return jsonify({"error": error}), 400
+
+                # Remove existing file if it exists
+                if existingFileName:
+                    existing_file_path = os.path.join(app.config[storage_path], existingFileName)
+                    if os.path.isfile(existing_file_path):
+                        os.remove(existing_file_path)
+
+                # Save the new file
+                file.save(file_path)
+                return filename
+            return None
+
+        # Update model with saved file paths
+        model.filename = save_file(files.get('filename'), 'CNN', model.filename) if files.get('filename') else model.filename
+      
+        # Commit the updated model
+        db.session.commit()
+        return jsonify(model.to_json()), 200
+    except Exception as e:
+        db.session.rollback()
+        print("Error:", str(e))
+        return jsonify({"error": str(e)}), 500
+
+
+# Preprocess the image
+
+def preprocess_image(image, target_size=(64, 64)):
+    """
+    Function to preprocess the image for CNN input.
+    This assumes the model expects images of size (64, 64) and scaled pixel values (1./255).
+    
+    Args:
+        image (PIL.Image): Input image to preprocess.
+        target_size (tuple): Target size for resizing the image.
+        
+    Returns:
+        np.ndarray: Preprocessed image array ready for CNN prediction.
+    """
+    if image.mode != "RGB":
+        image = image.convert("RGB")
+    
+    # Resize the image
+    image = image.resize(target_size)
+    
+    # Convert the image to an array
+    image = img_to_array(image)
+    
+    # Rescale pixel values to [0, 1] as done in training (1./255)
+    image = image / 255.0
+    
+    # Add an additional dimension to make it batch-compatible (1, 64, 64, 3)
+    image = np.expand_dims(image, axis=0)
+    
+    return image
+
+
+@app.route("/api/cnn/predict", methods=["POST"])
+def predict_cnn():
+    try:
+        # Validate if the image file is present in the request
+        if 'image' not in request.files:
+            return jsonify({"error": "Image file is required"}), 400
+
+        # Read the image file
+        image_file = request.files["image"]
+        
+        # Validate the modelId is present in the form data
+        modelId = request.form.get("modelId")
+        if not modelId:
+            return jsonify({"error": "Model ID is required"}), 400
+
+        # Validate that the image is a valid image file
+        try:
+            image = Image.open(io.BytesIO(image_file.read()))
+        except Exception as e:
+            return jsonify({"error": "Invalid image file"}), 400
+
+        # Preprocess the image for CNN prediction
+        processed_image = preprocess_image(image)
+
+        # Retrieve the model filename from the database using modelId
+        data_record = CNN.query.get(modelId)
+        if not data_record:
+            return jsonify({"error": "Model not found"}), 404
+
+        model_filename = data_record.to_json().get('filename')
+        if not model_filename:
+            return jsonify({"error": "Model filename not found in the database"}), 500
+
+        # Construct the full path to the model file
+        model_file_path = os.path.join(app.config['CNN'], model_filename)
+        if not os.path.exists(model_file_path):
+            return jsonify({"error": "Model file not found"}), 404
+        print(model_file_path)
+        
+          # Load the model based on file extension
+        file_extension = os.path.splitext(model_file_path)[1].lower()
+        
+        if file_extension == '.h5':
+            # Load Keras/TensorFlow model
+            model = load_model(model_file_path)
+        elif file_extension == '.pkl':
+            # Load joblib model
+            model = joblib.load(model_file_path)
+        else:
+            return jsonify({"error": f"Unsupported model file format: {file_extension}"}), 400
+
+
+        # Perform prediction on the preprocessed image
+        prediction = model.predict(processed_image)
+        print(f"Raw prediction output: {prediction}")
+
+        # For binary classification or multi-class, handle the prediction output
+        if prediction.shape[1] == 1:  # Binary classification
+            predicted_probability = prediction[0][0]
+            predicted_class_index = 1 if predicted_probability > 0.5 else 0
+        else:  # Multi-class classification
+            predicted_class_index = np.argmax(prediction, axis=1)[0]
+            predicted_probability = prediction[0][predicted_class_index]
+
+        # Define class labels corresponding to the indices
+        class_labels = data_record.to_json().get('result')
+
+        # Get the predicted class label
+        predicted_class_label = class_labels[predicted_class_index]
+
+        # Return the prediction result along with the probability and class label
+        return jsonify({
+            "predicted_class": predicted_class_label,
+            "predicted_probability": float(predicted_probability)
+        }), 200
+        
+    except Exception as e:
+        print("Error:", str(e))  # Log the error for debugging
         return jsonify({"error": str(e)}), 500

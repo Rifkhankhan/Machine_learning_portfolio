@@ -14,6 +14,9 @@ import {
   Route,
   RouterProvider,
 } from "react-router-dom";
+import ANN from "./screens/ANN.jsx";
+import CNN from "./screens/CNN.jsx";
+import ViewCNN from "./screens/ViewCNN.jsx";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -21,8 +24,9 @@ const router = createBrowserRouter(
       <Route index element={<Home />} /> {/* Default route */}
       <Route path="home" element={<Home />} />
       <Route path="model/:id" element={<View />} />
-      <Route path="about" element={<About />} />
-      <Route path="contact" element={<Contact />} />
+      <Route path="ann" element={<ANN />} />
+      <Route path="cnn" element={<CNN />} />
+      <Route path="cnn/:id" element={<ViewCNN />} />
     </Route>
   )
 );
